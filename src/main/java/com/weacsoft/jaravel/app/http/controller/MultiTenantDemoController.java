@@ -1,0 +1,164 @@
+package com.weacsoft.jaravel.app.http.controller;
+
+import com.weacsoft.jaravel.vendor.controller.Controllers;
+import com.weacsoft.jaravel.vendor.http.request.Request;
+import com.weacsoft.jaravel.vendor.http.response.Response;
+import com.weacsoft.jaravel.vendor.http.response.ResponseBuilder;
+import com.weacsoft.jaravel.vendor.plugin.jar.manager.HotPluginManager;
+import com.weacsoft.jaravel.vendor.plugin.jar.model.PluginInfo;
+import com.weacsoft.jaravel.vendor.plugin.jar.multitenant.TenantAwareHotPluginManager;
+import com.weacsoft.jaravel.vendor.plugin.jar.multitenant.TenantContext;
+import com.weacsoft.jaravel.vendor.plugin.jar.multitenant.TenantNaming;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 多租户插件演示控制器。
+ * <p>
+ * 演示 plugin-jar-multi-tenant 模块的能力：同一 JAR 插件可按租户隔离地重复加载，
+ * Bean 名称和路由路径自动按租户前缀化。
+ * <p>
+ * 注意：此控制器仅用于演示，生产环境不应暴露这些 REST API。
+ */
+@Controller
+public class MultiTenantDemoController implements Controllers {
+
+    @Autowired
+    private HotPluginManager jarPluginManager;
+
+    /** 查看多租户模块状态和当前租户上下文 */
+    public Response status(Request request) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        boolean multiTenantEnabled = jarPluginManager instanceof TenantAwareHotPluginManager;
+        result.put("multiTenantEnabled", multiTenantEnabled);
+        result.put("managerClass", jarPluginManager.getClass().getSimpleName());
+        result.put("currentTenant", TenantContext.getCurrentTenant());
+
+        if (multiTenantEnabled) {
+            TenantAwareHotPluginManager tam = (TenantAwareHotPluginManager) jarPluginManager;
+            result.put("separator", tam.getSeparator());
+        }
+        result.put("message", multiTenantEnabled
+                ? "多租户插件模式已激活，可使用 /api/multi-tenant/* 系列接口"
+                : "多租户插件模式未激活（未引入 plugin-jar-multi-tenant 依赖或已禁用）");
+        return ResponseBuilder.json(result);
+    }
+
+    /** 列出指定租户的所有插件 */
+    public Response listByTenant(Request request) {
+        String tenantId = request.routeParam("tenantId");
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("tenantId", tenantId);
+
+        if (!(jarPluginManager instanceof TenantAwareHotPluginManager tam)) {
+            return ResponseBuilder.error(400, "多租户插件模式未激活");
+        }
+
+        List<PluginInfo> plugins = tam.getPluginsByTenant(tenantId);
+        List<Map<String, Object>> pluginList = new ArrayList<>();
+        for (PluginInfo info : plugins) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("pluginId", info.getPluginId());
+            map.put("state", info.getState().name());
+            map.put("version", info.getVersion());
+            map.put("routeCount", info.getRouteMappings() != null ? info.getRouteMappings().size() : 0);
+            pluginList.add(map);
+        }
+        result.put("plugins", pluginList);
+        result.put("total", pluginList.size());
+        return ResponseBuilder.json(result);
+    }
+
+    /** 为指定租户注册插件（从已上传的 JAR 文件加载） */
+    public Response registerForTenant(Request request) {
+        String tenantId = request.routeParam("tenantId");
+        String jarPath = request.input("jarPath");
+        String pluginId = request.input("pluginId", "custom-plugin");
+
+        if (!(jarPluginManager instanceof TenantAwareHotPluginManager tam)) {
+            return ResponseBuilder.error(400, "多租户插件模式未激活");
+        }
+        if (jarPath == null || jarPath.isEmpty()) {
+            return ResponseBuilder.error(400, "缺少 jarPath 参数");
+        }
+
+        java.nio.file.Path path = java.nio.file.Paths.get(jarPath);
+        if (!java.nio.file.Files.exists(path)) {
+            return ResponseBuilder.error(404, "JAR 文件不存在: " + jarPath);
+        }
+
+        String fullPluginId = tam.registerPluginForTenant(path, tenantId, pluginId, true);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("tenantId", tenantId);
+        result.put("pluginId", pluginId);
+        result.put("fullPluginId", fullPluginId);
+        result.put("status", "REGISTERED");
+        result.put("message", "插件已为租户 " + tenantId + " 注册，Bean/路由将自动前缀化");
+        return ResponseBuilder.json(result);
+    }
+
+    /** 启用指定租户的插件 */
+    public Response enableForTenant(Request request) {
+        String tenantId = request.routeParam("tenantId");
+        String pluginId = request.routeParam("pluginId");
+
+        if (!(jarPluginManager instanceof TenantAwareHotPluginManager tam)) {
+            return ResponseBuilder.error(400, "多租户插件模式未激活");
+        }
+
+        boolean success = tam.enablePluginForTenant(tenantId, pluginId);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("tenantId", tenantId);
+        result.put("pluginId", pluginId);
+        result.put("status", success ? "ENABLED" : "ENABLE_FAILED");
+
+        if (success) {
+            PluginInfo info = tam.getPluginForTenant(tenantId, pluginId);
+            result.put("routeMappings", info != null ? info.getRouteMappings() : List.of());
+            result.put("registeredBeans", info != null ? info.getRegisteredBeanNames() : List.of());
+            result.put("message", "插件已启用，路由自动添加租户前缀 /" + tenantId + "/...");
+        }
+        return ResponseBuilder.json(result);
+    }
+
+    /** 禁用指定租户的插件 */
+    public Response disableForTenant(Request request) {
+        String tenantId = request.routeParam("tenantId");
+        String pluginId = request.routeParam("pluginId");
+
+        if (!(jarPluginManager instanceof TenantAwareHotPluginManager tam)) {
+            return ResponseBuilder.error(400, "多租户插件模式未激活");
+        }
+
+        boolean success = tam.disablePluginForTenant(tenantId, pluginId);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("tenantId", tenantId);
+        result.put("pluginId", pluginId);
+        result.put("status", success ? "DISABLED" : "DISABLE_FAILED");
+        return ResponseBuilder.json(result);
+    }
+
+    /** 演示命名规则：展示 Bean 名称和路由路径的前缀化效果 */
+    public Response namingDemo(Request request) {
+        String tenantId = request.query("tenant", "demoTenant");
+        String beanName = request.query("bean", "userController");
+        String routePath = request.query("path", "/api/users");
+        String separator = request.query("separator", "@");
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("tenantId", tenantId);
+        result.put("separator", separator);
+        result.put("originalBeanName", beanName);
+        result.put("prefixedBeanName", TenantNaming.prefixBeanName(tenantId, beanName));
+        result.put("originalRoutePath", routePath);
+        result.put("prefixedRoutePath", TenantNaming.prefixRoutePath(tenantId, routePath));
+        result.put("fullPluginId", TenantNaming.buildPluginId(tenantId, "blog", separator));
+        result.put("message", "多租户命名规则演示：Bean 名称和路由路径自动按租户前缀化");
+        return ResponseBuilder.json(result);
+    }
+}
