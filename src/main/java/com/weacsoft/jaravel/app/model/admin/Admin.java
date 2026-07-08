@@ -1,6 +1,7 @@
 package com.weacsoft.jaravel.app.model.admin;
 
 import com.weacsoft.jaravel.app.service.AdminRolePermissionService;
+import com.weacsoft.jaravel.vendor.auth.contract.Authenticatable;
 import com.weacsoft.jaravel.vendor.database.BaseModel;
 import gaarason.database.annotation.Column;
 import gaarason.database.annotation.Primary;
@@ -31,7 +32,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 @Repository
 @Table(name = "admins")
-public class Admin extends BaseModel<Admin, Long> {
+public class Admin extends BaseModel<Admin, Long> implements Authenticatable {
 
     @Primary
     @Column(name = "id")
@@ -81,6 +82,18 @@ public class Admin extends BaseModel<Admin, Long> {
     public static Admin findByUsername(String username) {
         Record<Admin, Long> record = query().where("username", username).first();
         return record == null ? null : record.toObject();
+    }
+
+    // ---- Authenticatable 接口实现 ----
+
+    @Override
+    public Object getAuthIdentifier() {
+        return id;
+    }
+
+    @Override
+    public String getAuthIdentifierName() {
+        return "id";
     }
 
     // ---- 面向对象的权限判断实例方法 ----

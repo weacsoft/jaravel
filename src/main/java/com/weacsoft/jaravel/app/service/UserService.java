@@ -1,9 +1,11 @@
 package com.weacsoft.jaravel.app.service;
 
 import com.weacsoft.jaravel.app.model.User;
+import com.weacsoft.jaravel.app.model.user.UserRole;
 import com.weacsoft.jaravel.vendor.core.SpringContext;
 import com.weacsoft.jaravel.vendor.event.Dispatcher;
 import com.weacsoft.jaravel.vendor.event.example.UserRegisteredEvent;
+import gaarason.database.contract.eloquent.Record;
 
 import java.util.List;
 
@@ -41,6 +43,12 @@ public final class UserService {
         user.setPassword(password);
         user.setEmail(email);
         user.save();
+
+        // 为新用户分配默认角色（普通用户），使其具备基本访问权限
+        Record<UserRole, Long> defaultRole = UserRole.query().where("code", "user").first();
+        if (defaultRole != null) {
+            UserRolePermissionService.assignRoleToUser(user.getId(), defaultRole.toObject().getId());
+        }
 
         // 分发用户注册事件（对齐 Laravel event(new UserRegisteredEvent(...))）
         Dispatcher dispatcher = SpringContext.bean(Dispatcher.class);

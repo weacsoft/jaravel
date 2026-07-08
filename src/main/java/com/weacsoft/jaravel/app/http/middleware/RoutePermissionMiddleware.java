@@ -8,9 +8,13 @@ import com.weacsoft.jaravel.vendor.http.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.middleware.Middleware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * 路由权限中间件：在中间件层判断「当前管理员有没有访问这个功能的权限」。
+ * <p>
+ * 标注 {@code @Component} 后由 Spring 容器管理为单例，路由注册时通过
+ * {@code context.getBean(RoutePermissionMiddleware.class)} 获取，无需每次 {@code new}。
  * <p>
  * 工作流程：
  * <ol>
@@ -28,22 +32,17 @@ import org.slf4j.LoggerFactory;
  *   <li><b>通配匹配</b>：{@code /admin/*} 匹配 {@code /admin} 下所有路由</li>
  * </ul>
  *
- * <h3>使用方式</h3>
- * 在路由注册时挂载此中间件，与 {@code Authenticate} 配合使用（先认证再鉴权）：
+ * <h3>使用方式（Spring Bean 模式，推荐）</h3>
  * <pre>
- * // 1. 全局守卫
+ * // 中间件已标注 @Component，从容器获取即可，无需 new
+ * RoutePermissionMiddleware rbacMiddleware = context.getBean(RoutePermissionMiddleware.class);
+ * Authenticate authMiddleware = context.getBean(Authenticate.class);
+ *
  * router.group(Map.of(Route.Group.PREFIX, "admin"), admin -> {
- *     admin.middleware(new Authenticate(), new RoutePermissionMiddleware());
+ *     admin.middleware(authMiddleware, rbacMiddleware);
  *     admin.get("/dashboard", controller::dashboard);
  *     admin.get("/user/list", controller::userList);
  * });
- *
- * // 2. 指定守卫
- * route.middleware(new Authenticate("api"), new RoutePermissionMiddleware("api"));
- *
- * // 3. 单条路由
- * router.get("/admin/order/list", controller::orderList)
- *       .middleware(new Authenticate(), new RoutePermissionMiddleware());
  * </pre>
  *
  * <h3>配合权限配置</h3>
@@ -63,6 +62,7 @@ import org.slf4j.LoggerFactory;
  * @see AdminRolePermissionService#routeMatches(String, String)
  * @see com.weacsoft.jaravel.vendor.auth.middleware.Authenticate
  */
+@Component
 public class RoutePermissionMiddleware implements Middleware {
 
     private static final Logger log = LoggerFactory.getLogger(RoutePermissionMiddleware.class);

@@ -22,14 +22,13 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * 插件管理演示控制器。
+ * 插件管理控制器，提供 Jar 插件和 Java 文件插件的管理能力。
  * <p>
- * 注意：此控制器仅用于演示，不在 vendor 包中提供。
- * 生产环境应通过编程方式调用 HotPluginManager / JavaFilePluginManager，
- * 而非暴露 REST API（安全考虑）。
+ * 包括插件列表、上传、启用/禁用、热重载、路由注册等管理操作。
+ * 所有管理路由通过 Authenticate("admin") + RoutePermissionMiddleware 保护。
  */
 @Controller
-public class PluginDemoController implements Controllers {
+public class PluginController implements Controllers {
 
     @Autowired
     private HotPluginManager jarPluginManager;

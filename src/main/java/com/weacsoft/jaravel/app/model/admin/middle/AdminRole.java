@@ -24,7 +24,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-@Repository
+@Repository("adminRolePivot")
 @Table(name = "admin_role")
 public class AdminRole extends BaseModel<AdminRole, Long> {
 

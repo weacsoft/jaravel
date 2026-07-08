@@ -17,14 +17,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 远程插件执行演示控制器。
+ * 远程插件执行管理控制器。
  * <p>
- * 演示 plugin-jar-remote-server（P2SP 子节点）和 plugin-jar-remote-client（P2SP 主节点）的能力。
- * <p>
- * 注意：此控制器仅用于演示，生产环境不应暴露这些 REST API（安全考虑）。
+ * 管理 plugin-jar-remote-server（P2SP 子节点）和 plugin-jar-remote-client（P2SP 主节点）的能力。
  */
 @Controller
-public class RemoteDemoController implements Controllers {
+public class RemoteController implements Controllers {
 
     @Autowired(required = false)
     private RemoteExecutionDispatcher remoteExecutionDispatcher;

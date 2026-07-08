@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -19,10 +19,10 @@
     </parent>
 
     <groupId>com.weacsoft</groupId>
-    <artifactId>jaravel-demo</artifactId>
+    <artifactId>jaravel</artifactId>
     <version>0.1.0</version>
-    <name>jaravel-demo</name>
-    <description>Jaravel Demo：展示全部 jaravel 能力的前后端分离示例项目（Laravel 文档风格）</description>
+    <name>jaravel</name>
+    <description>多租户 Jar/Java 热更新在线运行平台</description>
 
     <properties>
         <java.version>17</java.version>
@@ -41,66 +41,59 @@
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>starter</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.2</version>
         </dependency>
 
         <!-- JWT 可选模块（starter 不聚合，按需引入） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>jwt</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.2</version>
         </dependency>
 
         <!-- 插件系统模块（可选，按需引入） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-jar-core</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.2</version>
         </dependency>
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-jar-database</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.2</version>
         </dependency>
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-java-core</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.2</version>
         </dependency>
 
         <!-- 多租户插件支持（可选，按需引入） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-jar-multi-tenant</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.2</version>
         </dependency>
 
         <!-- 远程执行服务端（可选，P2SP 子节点） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-jar-remote-server</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.2</version>
         </dependency>
 
         <!-- 远程执行客户端（可选，P2SP 主节点） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-jar-remote-client</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.2</version>
         </dependency>
 
         <!-- jblade 模板引擎（显式声明，便于直接使用 BladeEngine） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>jblade</artifactId>
-            <version>0.1.0</version>
-        </dependency>
-
-        <!-- 验证码模块（可选，按需引入） -->
-        <dependency>
-            <groupId>io.github.lijialong1313</groupId>
-            <artifactId>captcha</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.2</version>
         </dependency>
 
         <!-- Druid 数据源（手动创建 GaarasonDataSource） -->
@@ -157,7 +150,11 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <jvmArguments>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArguments>
+                </configuration>
             </plugin>
         </plugins>
     </build>
 </project>
+

@@ -1,6 +1,7 @@
 package com.weacsoft.jaravel.app.provider;
 
 import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
+import com.weacsoft.jaravel.vendor.auth.middleware.Authenticate;
 import com.weacsoft.jaravel.vendor.middleware.ConvertEmptyStringsToNull;
 import com.weacsoft.jaravel.vendor.middleware.TrimStrings;
 import com.weacsoft.jaravel.vendor.route.Router;
@@ -41,6 +42,17 @@ public class RouteServiceProvider extends ServiceProvider {
         // 加载 Web 路由
         context.getBean(Web.class).register(baseRouter, context);
         return baseRouter;
+    }
+
+    /**
+     * 注册认证中间件为 Spring Bean（vendor 框架的 Authenticate 未标注 @Component）。
+     * <p>
+     * 这样路由注册时可通过 {@code context.getBean(Authenticate.class)} 获取，
+     * 无需每次 {@code new Authenticate()}。
+     */
+    @Bean
+    public Authenticate authenticate() {
+        return new Authenticate();
     }
 
     /**

@@ -34,13 +34,21 @@ public class View {
                 // cache 模块未正确配置，回退到内存缓存
             }
         }
-        return new BladeEngine("templates", ".blade.java", cacheStore);
+        try {
+            return new BladeEngine("templates", ".blade.java", cacheStore);
+        } catch (IllegalAccessError e) {
+            // JDK 21 模块系统限制：BladeEngine 继承 ClassLoader 受限
+            // 跳过模板引擎，API 接口不受影响
+            return null;
+        }
     }
 
-    // 将 BladeEngine 设置到 ResponseBuilder
+    // 将 BladeEngine 设置到 ResponseBuilder（引擎可能为 null）
     @Bean
     public Object initBladeEngine(BladeEngine engine) {
-        ResponseBuilder.setBladeEngine(engine);
-        return engine;
+        if (engine != null) {
+            ResponseBuilder.setBladeEngine(engine);
+        }
+        return engine != null ? engine : new Object();
     }
 }

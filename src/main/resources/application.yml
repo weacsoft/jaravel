@@ -5,10 +5,6 @@ spring:
   datasource:
     url: jdbc:sqlite:database1.sqlite
     driver-class-name: org.sqlite.JDBC
-    # 第二数据源（多数据库测试，Product 模型使用）
-    secondary:
-      url: jdbc:sqlite:database3.sqlite
-      driver-class-name: org.sqlite.JDBC
 
 jaravel:
   auth:
@@ -17,137 +13,77 @@ jaravel:
     secret: jaravel-secret-key-change-in-production-must-be-32-bytes
     ttl: 3600000
     refresh-ttl: 604800000
-    # token 自动刷新（续期），默认 true；token 过半 TTL 时自动签发新 token
     refresh-enabled: true
-    # 黑名单缓存 store：array（内存，单机）/ file（文件，可跨实例共享）
     blacklist-store: array
     blacklist-prefix: "jwt:blacklist:"
   migration:
     enabled: true
     table: migrations
     auto-run: true
+    source: classpath
   cache:
     default-store: array
     prefix: jaravel
   event:
     queue-enabled: true
-    # 队列配置：每个命名队列拥有独立线程池，不同队列互不阻塞
     queue:
       default:
-        pool-size: 4           # 默认队列线程池大小（不配置则使用 CPU 核心数）
-      notification:            # 通知队列（SendNotificationJob 使用）
-        pool-size: 2
-      # email:                 # 按队列名覆盖线程池大小
-      #   pool-size: 2
-    # 重试配置：监听器执行失败时自动重试
+        pool-size: 4
     retry:
-      max-attempts: 3          # 最大重试次数（不含首次执行）
-      delay-ms: 1000           # 重试间隔毫秒
+      max-attempts: 3
+      delay-ms: 1000
   # 插件系统配置
   plugin-jar:
     enabled: true
     plugins-dir: plugins
-    auto-restore: true
-    auto-register: true           # true=自动注册@PluginMapping路由, false=手动注册
-    # 多租户插件支持（引入 plugin-jar-multi-tenant 依赖后自动激活）
+    auto-restore: false
+    auto-register: true
+    # 多租户插件支持
     multi-tenant:
-      enabled: true               # 引入模块后默认启用
-      separator: "@"              # pluginId 中的租户分隔符（如 studentA@blog）
-    # 远程插件执行 P2SP（引入 plugin-jar-remote-server/client 依赖后激活）
+      enabled: true
+      separator: "@"
+    # 远程插件执行 P2SP
     remote:
       server:
-        enabled: false             # 设为 true 启动 TCP 子节点服务端
-        port: 9700                 # TCP 监听端口
-        auth-token: "jaravel-remote-secret"  # 认证令牌
-        # 树形拓扑配置（中继转发）
-        node-id: "node-root"       # 本节点 ID（树形拓扑中唯一标识）
-        relay-enabled: false       # 启用中继转发（本地无插件时转发给子节点）
-        max-hops: 5                # 请求最大跳数（防环）
+        enabled: false
+        port: 9700
+        auth-token: "jaravel-remote-secret"
+        node-id: "node-root"
+        relay-enabled: false
+        max-hops: 5
       client:
-        enabled: true              # 引入模块后默认启用
-        transport: tcp             # tcp（默认，高性能）或 http（JSON-RPC，复用 Web 端口）
-        http-endpoint: /rpc        # HTTP 模式端点路径
-        # 树形路由配置
-        tree-routing-enabled: false # 启用树形路由（优先转发给根子服务器）
-        max-hops: 5                # 请求最大跳数（防环）
+        enabled: true
+        transport: tcp
+        http-endpoint: /rpc
+        tree-routing-enabled: false
+        max-hops: 5
   plugin-java:
     enabled: true
     source-dir: plugins-java
     auto-scan: true
-    auto-register: true           # true=自动注册@PluginMapping路由, false=手动注册
+    auto-register: true
 
-  # Artisan CLI 命令框架（默认启用）
+  # Artisan CLI 命令框架
   artisan:
     enabled: true
-    # 代码生成命令配置（make:xxx）
     make:
-      base-package: com.weacsoft.jaravel    # 生成类的基包名
-      output-dir: src/main/java             # 输出根目录
-      migration-dir: migrations             # 迁移文件目录
+      base-package: com.weacsoft.jaravel
+      output-dir: src/main/java
+      migration-dir: migrations
 
   # 定时任务调度器
   schedule:
     enabled: true
-    # pool-size: 4                 # 调度线程池大小（默认 4）
-    # distributed-lock: true      # 启用分布式锁（默认 true，Redis 可用时生效）
-    # lock-connection: cache       # 锁 Redis 连接名
 
-  # Redis 连接管理（多机 session/缓存同步基础）
-  # 注意：未安装 Redis 时不影响应用启动，相关功能自动降级
+  # Redis 连接管理（未安装 Redis 时不影响应用启动）
   redis:
     options:
-      cluster: redis              # 集群模式：redis(单机)/cluster/sentinel
-      prefix: "jaravel-demo_"
+      cluster: redis
+      prefix: "jaravel_"
     connections:
       default:
         host: 127.0.0.1
         port: 6379
-      # cache:                     # 缓存专用连接（可使用不同 database）
-      #   host: 127.0.0.1
-      #   port: 6379
-      #   database: 1
-      # session:                   # Session 专用连接
-      #   host: 127.0.0.1
-      #   port: 6379
-      #   database: 2
-
-  # 微信 SDK 配置（公众号 + 小程序）
-  # 注意：未配置真实 appId/secret 时，/api/wechat/token 会返回未配置提示
-  wechat:
-    enabled: true
-    official-accounts:
-      default:
-        app-id: your-app-id
-        secret: your-secret
-        # token: your-mp-token           # 公众号消息校验 Token
-        # aes-key: your-mp-aes-key       # 公众号消息加解密密钥
-    mini-apps:
-      default:
-        app-id: your-mini-app-id
-        secret: your-mini-secret
-    http:
-      timeout: 5.0                       # HTTP 超时（秒）
-      retry: true                        # 失败重试
-
-  # 验证码配置
-  captcha:
-    enabled: true
-    width: 200
-    height: 60
-    length: 4
-    expire-seconds: 300
-    tolerance: 5.0
-    # 视觉配置
-    font-family: Arial
-    arc-interfere: true
-    arc-interfere-count: 5
-    # 轨迹验证
-    trajectory-enabled: true
-    min-trajectory-points: 5
-    min-trajectory-duration-ms: 500
-    # 水印（可选）
-    # watermark-text: "Jaravel Demo"
-    # watermark-position: bottom-right
 
 logging:
   level:

@@ -18,15 +18,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 多租户插件演示控制器。
+ * 多租户插件管理控制器。
  * <p>
- * 演示 plugin-jar-multi-tenant 模块的能力：同一 JAR 插件可按租户隔离地重复加载，
+ * 管理 plugin-jar-multi-tenant 模块的能力：同一 JAR 插件可按租户隔离地重复加载，
  * Bean 名称和路由路径自动按租户前缀化。
- * <p>
- * 注意：此控制器仅用于演示，生产环境不应暴露这些 REST API。
  */
 @Controller
-public class MultiTenantDemoController implements Controllers {
+public class TenantController implements Controllers {
 
     @Autowired
     private HotPluginManager jarPluginManager;

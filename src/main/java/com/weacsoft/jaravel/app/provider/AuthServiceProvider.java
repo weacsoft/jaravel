@@ -1,6 +1,7 @@
 package com.weacsoft.jaravel.app.provider;
 
 import com.weacsoft.jaravel.app.model.User;
+import com.weacsoft.jaravel.app.model.admin.Admin;
 import com.weacsoft.jaravel.vendor.auth.AuthManager;
 import com.weacsoft.jaravel.vendor.core.Facade;
 import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
@@ -45,24 +46,20 @@ public class AuthServiceProvider extends ServiceProvider {
         User userModel = Facade.resolve(User.class);
 
         // ---- 注册用户提供者（provider）----
-        // EloquentUserProvider 仅负责按主键 / 凭证取出用户，不校验密码。
-        // 凭证字段 "number" 用于 retrieveByCredentials（按工号查询）。
+        // User provider：用户表，凭证字段 number（工号）
         authManager.registerProvider("users",
                 new EloquentUserProvider<>(userModel, "number"));
 
-        // 如有 Admin 等其他用户模型，可注册更多 provider：
-        // Admin adminModel = Facade.resolve(Admin.class);
-        // authManager.registerProvider("admins",
-        //         new EloquentUserProvider<>(adminModel, "username"));
+        // Admin provider：管理员表，凭证字段 username
+        Admin adminModel = Facade.resolve(Admin.class);
+        authManager.registerProvider("admins",
+                new EloquentUserProvider<>(adminModel, "username"));
 
         // ---- 注册守卫（guard）----
-        // api 守卫：JWT 驱动，绑定 users provider（API 场景，无状态）
+        // api 守卫：JWT 驱动，绑定 users provider（用户场景，无状态）
         authManager.registerGuard("api", "jwt", "users");
-        // web 守卫：Session 驱动，绑定 users provider（Web 场景，有状态）
-        authManager.registerGuard("web", "session", "users");
-
-        // 如有 admin 场景，可注册更多 guard：
-        // authManager.registerGuard("admin", "jwt", "admins");
+        // admin 守卫：JWT 驱动，绑定 admins provider（管理员场景，无状态）
+        authManager.registerGuard("admin", "jwt", "admins");
 
         // ---- 设默认守卫 ----
         authManager.setDefaultGuard("api");

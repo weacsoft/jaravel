@@ -1,8 +1,8 @@
 package com.weacsoft.jaravel.database.migration;
 
 import com.weacsoft.jaravel.vendor.migration.Migration;
+import com.weacsoft.jaravel.vendor.migration.MigrationAnnotation;
 import com.weacsoft.jaravel.vendor.migration.Schema;
-import org.springframework.stereotype.Component;
 
 /**
  * 迁移：创建 RBAC 权限管理所需的 5 张表（演示完整的用户权限管理）。
@@ -17,9 +17,9 @@ import org.springframework.stereotype.Component;
  * </ul>
  * <p>
  * 类名日期晚于 {@code Migration_2024_01_02_CreateProductsTable}，按字典序排在其后执行。
- * 作为 Spring Bean（{@code @Component}）被 {@code Migrator} 自动发现。
+ * 作为迁移类（{@code @MigrationAnnotation}）被 {@code MigrationScanner} 自动发现。
  */
-@Component
+@MigrationAnnotation
 public class Migration_2024_01_03_CreateAdminRbacTables implements Migration {
 
     /**
@@ -37,6 +37,7 @@ public class Migration_2024_01_03_CreateAdminRbacTables implements Migration {
             table.string("nickname", 50).nullable();
             table.string("description", 255).nullable();
             table.tinyInteger("status").defaultValue(1);
+            table.text("model_shadow").nullable();
             table.timestamps();
         });
 
@@ -46,6 +47,7 @@ public class Migration_2024_01_03_CreateAdminRbacTables implements Migration {
             table.string("name", 50);
             table.string("code", 50).unique();
             table.string("description", 255).nullable();
+            table.text("model_shadow").nullable();
             table.timestamps();
         });
 
@@ -57,6 +59,7 @@ public class Migration_2024_01_03_CreateAdminRbacTables implements Migration {
             table.bigInteger("parent_id").unsigned().nullable();
             table.string("route", 200).nullable();
             table.string("description", 255).nullable();
+            table.text("model_shadow").nullable();
             table.timestamps();
             table.index("parent_id");
         });
@@ -66,6 +69,7 @@ public class Migration_2024_01_03_CreateAdminRbacTables implements Migration {
             table.id();
             table.bigInteger("admin_id").unsigned();
             table.bigInteger("role_id").unsigned();
+            table.text("model_shadow").nullable();
             table.timestamps();
             table.unique("admin_id", "role_id");
         });
@@ -75,6 +79,7 @@ public class Migration_2024_01_03_CreateAdminRbacTables implements Migration {
             table.id();
             table.bigInteger("role_id").unsigned();
             table.bigInteger("permission_id").unsigned();
+            table.text("model_shadow").nullable();
             table.timestamps();
             table.unique("role_id", "permission_id");
         });
