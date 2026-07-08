@@ -418,13 +418,13 @@
 
         {{-- ===== Java 插件管理 ===== --}}
         <section id="sec-java" class="section">
+            {{-- 插件列表 --}}
             <div class="mdui-card panel">
                 <div class="panel-inner">
                     <div class="panel-header">
                         <h3>Java 插件列表</h3>
                         <div class="actions">
                             <button class="mdui-btn mdui-ripple mdui-color-theme" onclick="loadJavaPlugins()">刷新</button>
-                            <button class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent" onclick="openJavaRegisterModal()">注册插件</button>
                         </div>
                     </div>
                     <div class="table-wrap">
@@ -432,6 +432,55 @@
                             <thead><tr><th>pluginId</th><th>状态</th><th>错误信息</th><th>操作</th></tr></thead>
                             <tbody id="javaBody"><tr class="empty-row"><td colspan="4">加载中...</td></tr></tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            {{-- 添加 Java 插件：在线编辑器 + 文件上传 --}}
+            <div class="mdui-card panel">
+                <div class="panel-inner">
+                    <div class="panel-header">
+                        <h3>添加 Java 插件</h3>
+                    </div>
+
+                    {{-- pluginId 输入 --}}
+                    <div class="mdui-textfield" style="max-width:400px;margin-bottom:16px;">
+                        <label class="mdui-textfield-label">pluginId（插件唯一标识）</label>
+                        <input class="mdui-textfield-input" type="text" id="javaPluginId" placeholder="例如：my-plugin">
+                    </div>
+
+                    {{-- 切换标签 --}}
+                    <div class="mdui-tab" mdui-tab>
+                        <a href="#tab-editor" class="mdui-ripple">在线编辑源码</a>
+                        <a href="#tab-upload" class="mdui-ripple">上传 Java 文件</a>
+                    </div>
+
+                    {{-- Tab 1: 在线代码编辑器 --}}
+                    <div id="tab-editor" style="padding-top:16px;">
+                        <div style="border:1px solid #e0e0e0;border-radius:4px;overflow:hidden;">
+                            <textarea id="javaCodeEditor"></textarea>
+                        </div>
+                        <p class="hint" style="margin-top:8px;">
+                            在编辑器中编写 Java 源码（支持含 <code>run()</code> 或 <code>main()</code> 方法的类），
+                            点击下方按钮直接编译注册为插件。
+                        </p>
+                        <button class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent" onclick="registerJavaFromEditor()">
+                            <i class="mdui-icon material-icons">cloud_upload</i> 编译并注册
+                        </button>
+                    </div>
+
+                    {{-- Tab 2: 文件上传 --}}
+                    <div id="tab-upload" style="padding-top:16px;">
+                        <div class="mdui-textfield" style="margin-bottom:16px;">
+                            <input class="mdui-textfield-input" type="file" id="javaFileInput" accept=".java">
+                            <label class="mdui-textfield-label">选择 .java 文件</label>
+                        </div>
+                        <p class="hint" style="margin-top:8px;">
+                            上传一个 <code>.java</code> 源文件，系统将编译并注册为插件。
+                        </p>
+                        <button class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent" onclick="registerJavaFromFile()">
+                            <i class="mdui-icon material-icons">upload_file</i> 上传并注册
+                        </button>
                     </div>
                 </div>
             </div>
@@ -763,6 +812,10 @@ function showSection(id) {
     document.getElementById('pageTitle').textContent = sectionTitles[id] || '';
     if (sectionLoaders[id]) {
         try { sectionLoaders[id](); } catch (e) { console.error(e); }
+    }
+    // 初始化 Java 代码编辑器
+    if (id === 'sec-java') {
+        setTimeout(initJavaCodeEditor, 100);
     }
 }
 
@@ -1194,22 +1247,60 @@ async function loadJavaPlugins() {
     }
 }
 
-function openJavaRegisterModal() {
-    openModal({
-        title: '注册 Java 插件',
-        submitText: '注册',
-        fields: [
-            { name: 'pluginId', label: 'pluginId', required: true, placeholder: '插件唯一标识' },
-            { name: 'sourcePath', label: '源码路径', required: true, placeholder: 'Java 源文件路径' }
-        ],
-        onSubmit: async () => {
-            const vals = collectModalForm();
-            if (!vals.pluginId || !vals.sourcePath) throw new Error('pluginId 和源码路径必填');
-            await apiPost('/api/plugins/java/register', vals);
+/* ---- Java 插件：CodeMirror 编辑器 + 文件上传 ---- */
+var javaCodeMirror = null;
+
+// 初始化 CodeMirror 编辑器（在 showSection 切换到 java 时调用）
+function initJavaCodeEditor() {
+    if (javaCodeMirror) return;
+    var ta = document.getElementById('javaCodeEditor');
+    if (!ta || typeof CodeMirror === 'undefined') return;
+    javaCodeMirror = CodeMirror.fromTextArea(ta, {
+        mode: 'text/x-java',
+        theme: 'material',
+        lineNumbers: true,
+        indentUnit: 4,
+        tabSize: 4,
+        height: '400px'
+    });
+    javaCodeMirror.setSize('100%', '400px');
+    javaCodeMirror.setValue('public class Hello {\n    public String run() {\n        return "Hello from jaravel!";\n    }\n}');
+}
+
+// 从编辑器编译并注册
+async function registerJavaFromEditor() {
+    var pluginId = document.getElementById('javaPluginId').value.trim();
+    if (!pluginId) { toast('请输入 pluginId', 'error'); return; }
+    if (!javaCodeMirror) { toast('编辑器未初始化', 'error'); return; }
+    var code = javaCodeMirror.getValue();
+    if (!code.trim()) { toast('源码不能为空', 'error'); return; }
+    try {
+        var res = await apiPost('/api/plugin/java/run', { code: code, in_memory: true });
+        // 编译成功后注册为插件
+        await apiPost('/api/plugins/java/register', { pluginId: pluginId, sourcePath: pluginId });
+        toast('Java 插件注册成功', 'success');
+        loadJavaPlugins();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+// 从文件上传并注册
+async function registerJavaFromFile() {
+    var pluginId = document.getElementById('javaPluginId').value.trim();
+    if (!pluginId) { toast('请输入 pluginId', 'error'); return; }
+    var fileInput = document.getElementById('javaFileInput');
+    if (!fileInput || !fileInput.files.length) { toast('请选择 .java 文件', 'error'); return; }
+    var file = fileInput.files[0];
+    var reader = new FileReader();
+    reader.onload = async function(e) {
+        var code = e.target.result;
+        try {
+            var res = await apiPost('/api/plugin/java/run', { code: code, in_memory: true });
+            await apiPost('/api/plugins/java/register', { pluginId: pluginId, sourcePath: pluginId });
             toast('Java 插件注册成功', 'success');
             loadJavaPlugins();
-        }
-    });
+        } catch (err) { toast(err.message, 'error'); }
+    };
+    reader.readAsText(file);
 }
 
 async function reloadJava(pluginId) {

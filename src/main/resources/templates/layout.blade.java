@@ -65,6 +65,11 @@
 
     {{-- mdui 1.x JavaScript（本地资源） --}}
     <script src="@asset('js/mdui.min.js')"></script>
+    {{-- CodeMirror 5.x 代码编辑器（本地资源） --}}
+    <link rel="stylesheet" href="@asset('codemirror/codemirror.min.css')">
+    <link rel="stylesheet" href="@asset('codemirror/theme-material.min.css')">
+    <script src="@asset('codemirror/codemirror.min.js')"></script>
+    <script src="@asset('codemirror/mode-clike.min.js')"></script>
     <script>
         // 全局抽屉控制工具（用于 showLogin/showMain 程序化控制 + 汉堡菜单点击切换）
         var jaravelDrawer = {

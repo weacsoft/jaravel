@@ -85,7 +85,7 @@
         <a href="/admin" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent">
             <i class="mdui-icon mdui-icon-left material-icons">admin_panel_settings</i> 进入管理后台
         </a>
-        <a href="/user" class="mdui-btn mdui-ripple mdui-color-theme">
+        <a href="/user" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme">
             <i class="mdui-icon mdui-icon-left material-icons">person</i> 用户中心
         </a>
     </div>
