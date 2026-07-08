@@ -65,9 +65,6 @@
     .user-meta .uname { font-weight: 600; font-size: 14px; }
     .user-meta .unum { font-size: 12px; color: #757575; }
 
-    /* ===== 区块导航 ===== */
-    .section-nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-
     /* ===== 内容卡片 ===== */
     .content-card { padding: 20px; margin-bottom: 20px; }
     .card-header {
@@ -193,6 +190,30 @@
 </style>
 @endsection
 
+{{-- ===================== 抽屉导航栏 ===================== --}}
+@section('drawer')
+<div class="mdui-drawer mdui-drawer-close" id="mainDrawer">
+    <div class="drawer-header">
+        <div class="drawer-title">{{ $appName ?? 'jaravel' }}</div>
+        <div class="drawer-subtitle">用户控制台</div>
+    </div>
+    <ul class="mdui-list drawer-nav">
+        <li class="mdui-list-item mdui-ripple" data-section="java">
+            <i class="mdui-list-item-icon mdui-icon material-icons">code</i>
+            <div class="mdui-list-item-content">Java 在线编译</div>
+        </li>
+        <li class="mdui-list-item mdui-ripple" data-section="jar">
+            <i class="mdui-list-item-icon mdui-icon material-icons">inventory_2</i>
+            <div class="mdui-list-item-content">Jar 插件执行</div>
+        </li>
+        <li class="mdui-list-item mdui-ripple" data-section="status">
+            <i class="mdui-list-item-icon mdui-icon material-icons">info</i>
+            <div class="mdui-list-item-content">插件状态</div>
+        </li>
+    </ul>
+</div>
+@endsection
+
 {{-- 页面主体内容 --}}
 @section('content')
 {{-- 页面标识，供前端识别当前页 --}}
@@ -265,13 +286,6 @@
             </div>
         </div>
         <button class="mdui-btn mdui-ripple" id="logoutBtn">退出登录</button>
-    </div>
-
-    {{-- 区块导航（通过 mdui-color-theme 类标记激活状态） --}}
-    <div class="section-nav">
-        <button class="mdui-btn mdui-ripple mdui-color-theme nav-btn active" data-section="java">Java 在线编译</button>
-        <button class="mdui-btn mdui-ripple nav-btn" data-section="jar">Jar 插件执行</button>
-        <button class="mdui-btn mdui-ripple nav-btn" data-section="status">插件状态</button>
     </div>
 
     {{-- ===== Java 在线编译 ===== --}}
@@ -505,10 +519,12 @@
     function showLogin() {
         el('loginView').classList.remove('hidden');
         el('appView').classList.add('hidden');
+        if (typeof jaravelDrawer !== 'undefined') jaravelDrawer.close();
     }
     function showApp() {
         el('loginView').classList.add('hidden');
         el('appView').classList.remove('hidden');
+        if (typeof jaravelDrawer !== 'undefined') jaravelDrawer.open();
     }
 
     /** 填充用户信息 */
@@ -625,10 +641,9 @@
     };
 
     function switchSection(name) {
-        document.querySelectorAll('.nav-btn').forEach(function (a) {
+        document.querySelectorAll('.drawer-nav .mdui-list-item').forEach(function (a) {
             var active = a.dataset.section === name;
-            a.classList.toggle('mdui-color-theme', active);
-            a.classList.toggle('active', active);
+            a.classList.toggle('mdui-list-item-active', active);
         });
         document.querySelectorAll('.page-section').forEach(function (s) { s.classList.add('hidden'); });
         var sec = el('section-' + name);
@@ -644,7 +659,7 @@
         }
     }
 
-    document.querySelectorAll('.nav-btn').forEach(function (a) {
+    document.querySelectorAll('.drawer-nav .mdui-list-item').forEach(function (a) {
         a.addEventListener('click', function () { switchSection(a.dataset.section); });
     });
 

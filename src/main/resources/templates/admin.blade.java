@@ -14,45 +14,8 @@
 @section('head')
 <style>
     /* ===== 管理后台专属样式（基于 mdui 1.x） ===== */
-    .admin-layout {
-        display: flex;
-        min-height: 100vh;
-        background: #ffffff;
-    }
-    /* 侧边栏 */
-    .sidebar {
-        width: 248px;
-        flex-shrink: 0;
-        background: #fafafa;
-        border-right: 1px solid #e0e0e0;
-        padding: 16px 12px;
-        box-sizing: border-box;
-        position: sticky;
-        top: 0;
-        height: 100vh;
-        overflow-y: auto;
-    }
-    .sidebar-header { padding: 8px 12px 16px; }
-    .sidebar-header h1 {
-        margin: 0;
-        font-size: 20px;
-        color: #3f51b5;
-        font-weight: 700;
-    }
-    .sidebar-header p {
-        margin: 4px 0 0;
-        font-size: 12px;
-        color: #757575;
-    }
-    .sidebar-nav .mdui-list-item { margin-bottom: 4px; }
-    /* 主内容区 */
-    .main {
-        flex: 1;
-        min-width: 0;
-        padding: 20px 24px;
-        box-sizing: border-box;
-    }
-    .topbar {
+    /* 页面头部栏（标题 + 用户信息） */
+    .page-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -60,15 +23,15 @@
         flex-wrap: wrap;
         gap: 12px;
     }
-    .topbar h2 {
+    .page-header h2 {
         margin: 0;
         font-size: 22px;
         color: #212121;
     }
-    .topbar-user { display: flex; align-items: center; gap: 12px; }
-    .topbar-user .meta { text-align: right; line-height: 1.2; }
-    .topbar-user .meta .name { font-weight: 600; font-size: 14px; color: #212121; }
-    .topbar-user .meta .role { font-size: 12px; color: #757575; }
+    .header-user { display: flex; align-items: center; gap: 12px; }
+    .header-user .meta { text-align: right; line-height: 1.2; }
+    .header-user .meta .name { font-weight: 600; font-size: 14px; color: #212121; }
+    .header-user .meta .role { font-size: 12px; color: #757575; }
     .admin-avatar {
         width: 40px;
         height: 40px;
@@ -81,6 +44,8 @@
         font-size: 18px;
         flex-shrink: 0;
     }
+    /* 抽屉导航内部样式 */
+    .drawer-nav .mdui-list-item { margin-bottom: 4px; }
     /* 区块切换 */
     .section { display: none; }
     .section.active { display: block; }
@@ -233,11 +198,55 @@
     .toast.info { background: #3f51b5; color: #ffffff; }
     /* 表格内操作按钮收紧 */
     .btn-action { min-width: 0; padding: 0 12px; }
-    @media (max-width: 840px) {
-        .admin-layout { flex-direction: column; }
-        .sidebar { width: 100%; height: auto; position: relative; }
-    }
 </style>
+@endsection
+
+{{-- ===================== 抽屉导航栏 ===================== --}}
+@section('drawer')
+<div class="mdui-drawer mdui-drawer-close" id="mainDrawer">
+    <div class="drawer-header">
+        <div class="drawer-title">{{ $appName }}</div>
+        <div class="drawer-subtitle">管理后台</div>
+    </div>
+    <ul class="mdui-list drawer-nav">
+        <li class="mdui-list-item mdui-ripple" data-section="sec-dashboard">
+            <i class="mdui-list-item-icon mdui-icon material-icons">dashboard</i>
+            <div class="mdui-list-item-content">仪表盘</div>
+        </li>
+        <li class="mdui-list-item mdui-ripple" data-section="sec-admins">
+            <i class="mdui-list-item-icon mdui-icon material-icons">manage_accounts</i>
+            <div class="mdui-list-item-content">管理员管理</div>
+        </li>
+        <li class="mdui-list-item mdui-ripple" data-section="sec-roles">
+            <i class="mdui-list-item-icon mdui-icon material-icons">shield</i>
+            <div class="mdui-list-item-content">角色管理</div>
+        </li>
+        <li class="mdui-list-item mdui-ripple" data-section="sec-permissions">
+            <i class="mdui-list-item-icon mdui-icon material-icons">key</i>
+            <div class="mdui-list-item-content">权限管理</div>
+        </li>
+        <li class="mdui-list-item mdui-ripple" data-section="sec-users">
+            <i class="mdui-list-item-icon mdui-icon material-icons">group</i>
+            <div class="mdui-list-item-content">用户管理</div>
+        </li>
+        <li class="mdui-list-item mdui-ripple" data-section="sec-jar">
+            <i class="mdui-list-item-icon mdui-icon material-icons">inventory_2</i>
+            <div class="mdui-list-item-content">Jar 插件管理</div>
+        </li>
+        <li class="mdui-list-item mdui-ripple" data-section="sec-java">
+            <i class="mdui-list-item-icon mdui-icon material-icons">coffee</i>
+            <div class="mdui-list-item-content">Java 插件管理</div>
+        </li>
+        <li class="mdui-list-item mdui-ripple" data-section="sec-tenant">
+            <i class="mdui-list-item-icon mdui-icon material-icons">corporate_fare</i>
+            <div class="mdui-list-item-content">多租户管理</div>
+        </li>
+        <li class="mdui-list-item mdui-ripple" data-section="sec-remote">
+            <i class="mdui-list-item-icon mdui-icon material-icons">public</i>
+            <div class="mdui-list-item-content">远程执行</div>
+        </li>
+    </ul>
+</div>
 @endsection
 
 @section('content')
@@ -266,69 +275,21 @@
 </div>
 
 {{-- ===================== 主界面 ===================== --}}
-<div id="mainView" class="admin-layout" style="display:none">
-    {{-- 侧边栏 --}}
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <h1>{{ $appName }}</h1>
-            <p>管理后台</p>
-        </div>
-        <ul class="mdui-list sidebar-nav">
-            <li class="mdui-list-item mdui-ripple" data-section="sec-dashboard">
-                <i class="mdui-list-item-icon mdui-icon material-icons">dashboard</i>
-                <div class="mdui-list-item-content">仪表盘</div>
-            </li>
-            <li class="mdui-list-item mdui-ripple" data-section="sec-admins">
-                <i class="mdui-list-item-icon mdui-icon material-icons">manage_accounts</i>
-                <div class="mdui-list-item-content">管理员管理</div>
-            </li>
-            <li class="mdui-list-item mdui-ripple" data-section="sec-roles">
-                <i class="mdui-list-item-icon mdui-icon material-icons">shield</i>
-                <div class="mdui-list-item-content">角色管理</div>
-            </li>
-            <li class="mdui-list-item mdui-ripple" data-section="sec-permissions">
-                <i class="mdui-list-item-icon mdui-icon material-icons">key</i>
-                <div class="mdui-list-item-content">权限管理</div>
-            </li>
-            <li class="mdui-list-item mdui-ripple" data-section="sec-users">
-                <i class="mdui-list-item-icon mdui-icon material-icons">group</i>
-                <div class="mdui-list-item-content">用户管理</div>
-            </li>
-            <li class="mdui-list-item mdui-ripple" data-section="sec-jar">
-                <i class="mdui-list-item-icon mdui-icon material-icons">inventory_2</i>
-                <div class="mdui-list-item-content">Jar 插件管理</div>
-            </li>
-            <li class="mdui-list-item mdui-ripple" data-section="sec-java">
-                <i class="mdui-list-item-icon mdui-icon material-icons">coffee</i>
-                <div class="mdui-list-item-content">Java 插件管理</div>
-            </li>
-            <li class="mdui-list-item mdui-ripple" data-section="sec-tenant">
-                <i class="mdui-list-item-icon mdui-icon material-icons">corporate_fare</i>
-                <div class="mdui-list-item-content">多租户管理</div>
-            </li>
-            <li class="mdui-list-item mdui-ripple" data-section="sec-remote">
-                <i class="mdui-list-item-icon mdui-icon material-icons">public</i>
-                <div class="mdui-list-item-content">远程执行</div>
-            </li>
-        </ul>
-    </aside>
-
-    {{-- 主内容区 --}}
-    <main class="main">
-        {{-- 顶部栏 --}}
-        <div class="topbar">
-            <h2 id="pageTitle">仪表盘</h2>
-            <div class="topbar-user">
-                <div class="meta">
-                    <div class="name" id="adminName">管理员</div>
-                    <div class="role">已登录</div>
-                </div>
-                <div id="adminAvatar" class="admin-avatar mdui-color-theme-accent">A</div>
-                <button class="mdui-btn mdui-ripple mdui-color-theme" id="logoutBtn">退出登录</button>
+<div id="mainView" style="display:none">
+    {{-- 页面头部 --}}
+    <div class="page-header">
+        <h2 id="pageTitle">仪表盘</h2>
+        <div class="header-user">
+            <div class="meta">
+                <div class="name" id="adminName">管理员</div>
+                <div class="role">已登录</div>
             </div>
+            <div id="adminAvatar" class="admin-avatar mdui-color-theme-accent">A</div>
+            <button class="mdui-btn mdui-ripple mdui-color-theme" id="logoutBtn">退出登录</button>
         </div>
+    </div>
 
-        {{-- ===== 仪表盘 ===== --}}
+    {{-- ===== 仪表盘 ===== --}}
         <section id="sec-dashboard" class="section active">
             <div class="mdui-card panel">
                 <div class="panel-inner">
@@ -538,7 +499,7 @@
                 </div>
             </div>
         </section>
-    </main>
+    </div>
 </div>
 
 {{-- ===================== 通用对话框（mdui 1.x） ===================== --}}
@@ -676,13 +637,15 @@ function handleUnauthorized() {
 function showLogin() {
     document.getElementById('loginView').style.display = 'flex';
     document.getElementById('mainView').style.display = 'none';
+    if (typeof jaravelDrawer !== 'undefined') jaravelDrawer.close();
 }
 
 function showMain() {
     document.getElementById('loginView').style.display = 'none';
-    document.getElementById('mainView').style.display = 'flex';
+    document.getElementById('mainView').style.display = 'block';
     updateAdminUI();
     showSection('sec-dashboard');
+    if (typeof jaravelDrawer !== 'undefined') jaravelDrawer.open();
 }
 
 // 更新顶部栏管理员信息
@@ -790,7 +753,7 @@ function showSection(id) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     const sec = document.getElementById(id);
     if (sec) sec.classList.add('active');
-    document.querySelectorAll('.sidebar-nav .mdui-list-item').forEach(a => {
+    document.querySelectorAll('.drawer-nav .mdui-list-item').forEach(a => {
         if (a.dataset.section === id) {
             a.classList.add('mdui-list-item-active');
         } else {
@@ -803,7 +766,7 @@ function showSection(id) {
     }
 }
 
-document.querySelectorAll('.sidebar-nav .mdui-list-item').forEach(item => {
+document.querySelectorAll('.drawer-nav .mdui-list-item').forEach(item => {
     item.addEventListener('click', () => showSection(item.dataset.section));
 });
 
