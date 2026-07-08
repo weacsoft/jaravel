@@ -5,6 +5,7 @@ import com.weacsoft.jaravel.vendor.http.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.jblade.BladeAssetHelper;
 import com.weacsoft.jaravel.vendor.jblade.BladeEngine;
 import com.weacsoft.jaravel.vendor.utils.memory.MemoryClassLoader;
+import com.weacsoft.jaravel.vendor.wire.WireManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -34,7 +35,9 @@ public class BladeEngineProvider extends ServiceProvider {
                 new java.util.HashMap<>(), BladeEngineProvider.class.getClassLoader());
         BladeEngine engine = new BladeEngine("templates", classLoader);
         ResponseBuilder.setBladeEngine(engine);
+        WireManager.setEngine(engine);
 
         log.info("[blade] BladeEngine 已初始化, 模板目录=templates/, 后缀=.blade.java, 资源前缀=/static");
+        log.info("[wire] WireManager 已初始化, 使用同一 BladeEngine 实例");
     }
 }

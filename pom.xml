@@ -96,6 +96,13 @@
             <version>0.1.2</version>
         </dependency>
 
+        <!-- Wire 部分更新模块（Laravel Livewire 风格，支持自定义 update URL 和 @section 无感更新） -->
+        <dependency>
+            <groupId>io.github.lijialong1313</groupId>
+            <artifactId>wire</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+
         <!-- Druid 数据源（手动创建 GaarasonDataSource） -->
         <dependency>
             <groupId>com.alibaba</groupId>
