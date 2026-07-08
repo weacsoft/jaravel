@@ -35,10 +35,9 @@
         box-shadow: 0 8px 20px rgba(102,126,234,.4);
     }
     .login-title { text-align: center; margin: 0 0 4px; }
-    .login-subtitle { text-align: center; color: var(--mdui-color-on-surface-variant); margin: 0 0 20px; font-size: 14px; }
+    .login-subtitle { text-align: center; color: #757575; margin: 0 0 20px; font-size: 14px; }
     .login-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-    .login-tabs mdui-button { flex: 1; }
-    .btn-block { width: 100%; }
+    .login-tabs .mdui-btn { flex: 1; }
 
     /* ===== 用户信息栏 ===== */
     .user-bar {
@@ -46,7 +45,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 12px 0;
-        border-bottom: 1px solid var(--mdui-color-outline-variant);
+        border-bottom: 1px solid #e0e0e0;
         margin-bottom: 20px;
         flex-wrap: wrap;
         gap: 12px;
@@ -55,8 +54,8 @@
     .avatar {
         width: 40px; height: 40px;
         border-radius: 50%;
-        background: var(--mdui-color-primary);
-        color: var(--mdui-color-on-primary);
+        background: #3f51b5;
+        color: #ffffff;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -64,7 +63,7 @@
         font-size: 16px;
     }
     .user-meta .uname { font-weight: 600; font-size: 14px; }
-    .user-meta .unum { font-size: 12px; color: var(--mdui-color-on-surface-variant); }
+    .user-meta .unum { font-size: 12px; color: #757575; }
 
     /* ===== 区块导航 ===== */
     .section-nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -83,7 +82,7 @@
 
     /* ===== Java 代码编辑器 ===== */
     .editor-wrap {
-        border: 1px solid var(--mdui-color-outline-variant);
+        border: 1px solid #e0e0e0;
         border-radius: 12px;
         overflow: hidden;
     }
@@ -92,9 +91,9 @@
         justify-content: space-between;
         align-items: center;
         padding: 8px 14px;
-        background: var(--mdui-color-surface-variant);
+        background: #f5f5f5;
         font-size: 12px;
-        color: var(--mdui-color-on-surface-variant);
+        color: #757575;
     }
     #javaCode {
         width: 100%;
@@ -120,13 +119,13 @@
         align-items: center;
         margin-bottom: 12px;
         font-size: 13px;
-        color: var(--mdui-color-on-surface-variant);
+        color: #757575;
     }
-    .result-meta b { color: var(--mdui-color-on-surface); font-weight: 600; }
+    .result-meta b { color: #212121; font-weight: 600; }
     .result-label {
         font-size: 13px;
         font-weight: 600;
-        color: var(--mdui-color-on-surface-variant);
+        color: #757575;
         margin: 14px 0 6px;
         text-transform: uppercase;
         letter-spacing: .5px;
@@ -150,11 +149,11 @@
         justify-content: space-between;
         align-items: center;
         padding: 10px 0;
-        border-bottom: 1px dashed var(--mdui-color-outline-variant);
+        border-bottom: 1px dashed #e0e0e0;
         font-size: 14px;
     }
     .stat-row:last-child { border-bottom: none; }
-    .stat-row .k { color: var(--mdui-color-on-surface-variant); }
+    .stat-row .k { color: #757575; }
     .stat-row .v { font-weight: 600; }
 
     /* ===== 提示框 ===== */
@@ -164,8 +163,8 @@
         font-size: 14px;
         margin-bottom: 8px;
     }
-    .alert-error { background: var(--mdui-color-error-container); color: var(--mdui-color-on-error-container); }
-    .alert-info { background: var(--mdui-color-primary-container); color: var(--mdui-color-on-primary-container); }
+    .alert-error { background: #ffebee; color: #b71c1c; }
+    .alert-info { background: #e8eaf6; color: #1a237e; }
 
     /* ===== 加载与空状态 ===== */
     .loading {
@@ -173,12 +172,12 @@
         align-items: center;
         gap: 8px;
         font-size: 13px;
-        color: var(--mdui-color-on-surface-variant);
+        color: #757575;
         padding: 24px 0;
     }
     .empty {
         text-align: center;
-        color: var(--mdui-color-on-surface-variant);
+        color: #757575;
         font-size: 13px;
         padding: 24px 0;
     }
@@ -187,10 +186,10 @@
     .plugin-table th, .plugin-table td {
         text-align: left;
         padding: 10px 12px;
-        border-bottom: 1px solid var(--mdui-color-outline-variant);
+        border-bottom: 1px solid #e0e0e0;
         font-size: 13px;
     }
-    .plugin-table th { font-weight: 500; color: var(--mdui-color-on-surface-variant); }
+    .plugin-table th { font-weight: 500; color: #757575; }
 </style>
 @endsection
 
@@ -201,39 +200,57 @@
 
 {{-- ============ 登录 / 注册视图 ============ --}}
 <div id="loginView" class="login-wrap">
-    <mdui-card variant="outlined" class="login-card">
+    <div class="mdui-card login-card">
         <div class="brand-mark">
             <div class="logo">J</div>
         </div>
         <h2 class="login-title">{{ $appName ?? 'jaravel' }} 用户控制台</h2>
         <p class="login-subtitle">多租户 Jar/Java 插件运行平台</p>
 
-        {{-- 登录 / 注册 切换 --}}
+        {{-- 登录 / 注册 切换（通过 mdui-color-theme 类切换激活状态） --}}
         <div class="login-tabs">
-            <mdui-button variant="tonal" class="login-tab active" data-tab="login">登录</mdui-button>
-            <mdui-button variant="text" class="login-tab" data-tab="register">注册</mdui-button>
+            <button class="mdui-btn mdui-ripple mdui-color-theme login-tab active" data-tab="login">登录</button>
+            <button class="mdui-btn mdui-ripple login-tab" data-tab="register">注册</button>
         </div>
 
         {{-- 登录表单 --}}
         <form id="loginForm" autocomplete="off">
-            <mdui-text-field label="工号" placeholder="请输入工号" id="loginNumber" required style="display:block;margin-bottom:16px;width:100%;"></mdui-text-field>
-            <mdui-text-field label="密码" type="password" placeholder="请输入密码" id="loginPassword" required style="display:block;margin-bottom:8px;width:100%;"></mdui-text-field>
+            <div class="mdui-textfield" style="margin-bottom:16px;">
+                <label class="mdui-textfield-label">工号</label>
+                <input class="mdui-textfield-input" type="text" placeholder="请输入工号" id="loginNumber" required>
+            </div>
+            <div class="mdui-textfield" style="margin-bottom:8px;">
+                <label class="mdui-textfield-label">密码</label>
+                <input class="mdui-textfield-input" type="password" placeholder="请输入密码" id="loginPassword" required>
+            </div>
             <div id="loginAlert"></div>
-            <mdui-button type="submit" variant="filled" id="loginBtn" class="btn-block" style="margin-top:8px;">登录</mdui-button>
+            <button type="submit" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent mdui-btn-block" id="loginBtn" style="margin-top:8px;">登录</button>
             <div class="hint" style="text-align:center;margin-top:8px;">调用接口：POST /api/auth/user/login</div>
         </form>
 
         {{-- 注册表单 --}}
         <form id="registerForm" autocomplete="off" class="hidden">
-            <mdui-text-field label="姓名" placeholder="请输入姓名" id="regName" required style="display:block;margin-bottom:16px;width:100%;"></mdui-text-field>
-            <mdui-text-field label="工号" placeholder="请输入工号" id="regNumber" required style="display:block;margin-bottom:16px;width:100%;"></mdui-text-field>
-            <mdui-text-field label="密码" type="password" placeholder="请输入密码" id="regPassword" required style="display:block;margin-bottom:16px;width:100%;"></mdui-text-field>
-            <mdui-text-field label="邮箱" placeholder="请输入邮箱" id="regEmail" required style="display:block;margin-bottom:8px;width:100%;"></mdui-text-field>
+            <div class="mdui-textfield" style="margin-bottom:16px;">
+                <label class="mdui-textfield-label">姓名</label>
+                <input class="mdui-textfield-input" type="text" placeholder="请输入姓名" id="regName" required>
+            </div>
+            <div class="mdui-textfield" style="margin-bottom:16px;">
+                <label class="mdui-textfield-label">工号</label>
+                <input class="mdui-textfield-input" type="text" placeholder="请输入工号" id="regNumber" required>
+            </div>
+            <div class="mdui-textfield" style="margin-bottom:16px;">
+                <label class="mdui-textfield-label">密码</label>
+                <input class="mdui-textfield-input" type="password" placeholder="请输入密码" id="regPassword" required>
+            </div>
+            <div class="mdui-textfield" style="margin-bottom:8px;">
+                <label class="mdui-textfield-label">邮箱</label>
+                <input class="mdui-textfield-input" type="text" placeholder="请输入邮箱" id="regEmail" required>
+            </div>
             <div id="registerAlert"></div>
-            <mdui-button type="submit" variant="filled" id="registerBtn" class="btn-block" style="margin-top:8px;">注册</mdui-button>
+            <button type="submit" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent mdui-btn-block" id="registerBtn" style="margin-top:8px;">注册</button>
             <div class="hint" style="text-align:center;margin-top:8px;">调用接口：POST /api/auth/user/register</div>
         </form>
-    </mdui-card>
+    </div>
 </div>
 
 {{-- ============ 主应用视图 ============ --}}
@@ -247,27 +264,27 @@
                 <div class="unum" id="userNumber">工号：--</div>
             </div>
         </div>
-        <mdui-button variant="outlined" id="logoutBtn">退出登录</mdui-button>
+        <button class="mdui-btn mdui-ripple" id="logoutBtn">退出登录</button>
     </div>
 
-    {{-- 区块导航 --}}
+    {{-- 区块导航（通过 mdui-color-theme 类标记激活状态） --}}
     <div class="section-nav">
-        <mdui-button variant="tonal" class="nav-btn active" data-section="java">Java 在线编译</mdui-button>
-        <mdui-button variant="text" class="nav-btn" data-section="jar">Jar 插件执行</mdui-button>
-        <mdui-button variant="text" class="nav-btn" data-section="status">插件状态</mdui-button>
+        <button class="mdui-btn mdui-ripple mdui-color-theme nav-btn active" data-section="java">Java 在线编译</button>
+        <button class="mdui-btn mdui-ripple nav-btn" data-section="jar">Jar 插件执行</button>
+        <button class="mdui-btn mdui-ripple nav-btn" data-section="status">插件状态</button>
     </div>
 
     {{-- ===== Java 在线编译 ===== --}}
     <section id="section-java" class="page-section">
-        <mdui-card variant="outlined" class="content-card">
+        <div class="mdui-card content-card">
             <div class="card-header">
                 <h3 class="section-title">Java 源码在线编译执行</h3>
                 <div class="header-controls">
-                    <mdui-select id="javaInMemory" value="true">
-                        <mdui-menu-item value="true">纯内存编译</mdui-menu-item>
-                        <mdui-menu-item value="false">文件编译</mdui-menu-item>
-                    </mdui-select>
-                    <mdui-button variant="filled" id="runJavaBtn">运行</mdui-button>
+                    <select id="javaInMemory" class="mdui-select" mdui-select>
+                        <option value="true">纯内存编译</option>
+                        <option value="false">文件编译</option>
+                    </select>
+                    <button class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent" id="runJavaBtn">运行</button>
                 </div>
             </div>
             <div class="editor-wrap">
@@ -296,32 +313,41 @@
                 </div>
                 <div class="result-label hidden" id="javaOutputLabel">输出结果</div>
                 <div class="result-box" id="javaOutput"></div>
-                <div class="result-label hidden" id="javaErrorLabel" style="color:var(--mdui-color-error);">错误信息</div>
+                <div class="result-label hidden" id="javaErrorLabel" style="color:#f44336;">错误信息</div>
                 <div class="result-box error hidden" id="javaError"></div>
             </div>
-        </mdui-card>
+        </div>
     </section>
 
     {{-- ===== Jar 插件执行 ===== --}}
     <section id="section-jar" class="page-section hidden">
-        <mdui-card variant="outlined" class="content-card">
+        <div class="mdui-card content-card">
             <div class="card-header">
                 <h3 class="section-title">Jar 插件反射调用</h3>
             </div>
             <form id="jarForm" autocomplete="off">
                 <div class="jar-form-grid">
-                    <mdui-text-field label="Jar 文件名 (jar_name)" placeholder="例如：demo-plugin.jar" id="jarName" required style="display:block;margin-bottom:16px;width:100%;"></mdui-text-field>
-                    <mdui-text-field label="主类全限定名 (main_class)" placeholder="例如：com.example.HelloPlugin" id="mainClass" required style="display:block;margin-bottom:16px;width:100%;"></mdui-text-field>
-                    <mdui-text-field label="方法名 (method，默认 run)" placeholder="run" id="methodName" value="run" style="display:block;margin-bottom:16px;width:100%;"></mdui-text-field>
+                    <div class="mdui-textfield" style="margin-bottom:16px;">
+                        <label class="mdui-textfield-label">Jar 文件名 (jar_name)</label>
+                        <input class="mdui-textfield-input" type="text" placeholder="例如：demo-plugin.jar" id="jarName" required>
+                    </div>
+                    <div class="mdui-textfield" style="margin-bottom:16px;">
+                        <label class="mdui-textfield-label">主类全限定名 (main_class)</label>
+                        <input class="mdui-textfield-input" type="text" placeholder="例如：com.example.HelloPlugin" id="mainClass" required>
+                    </div>
+                    <div class="mdui-textfield" style="margin-bottom:16px;">
+                        <label class="mdui-textfield-label">方法名 (method，默认 run)</label>
+                        <input class="mdui-textfield-input" type="text" placeholder="run" id="methodName" value="run">
+                    </div>
                     <div style="margin-bottom:16px;">
-                        <label style="display:block;font-size:13px;color:var(--mdui-color-on-surface-variant);margin-bottom:4px;">加载方式</label>
-                        <mdui-select id="inMemory" value="true" style="width:100%;">
-                            <mdui-menu-item value="true">纯内存加载（不落盘）</mdui-menu-item>
-                            <mdui-menu-item value="false">文件加载（URLClassLoader）</mdui-menu-item>
-                        </mdui-select>
+                        <label style="display:block;font-size:13px;color:#757575;margin-bottom:4px;">加载方式</label>
+                        <select id="inMemory" class="mdui-select" mdui-select style="width:100%;">
+                            <option value="true">纯内存加载（不落盘）</option>
+                            <option value="false">文件加载（URLClassLoader）</option>
+                        </select>
                     </div>
                 </div>
-                <mdui-button type="submit" variant="filled" id="runJarBtn">运行 Jar 插件</mdui-button>
+                <button type="submit" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent" id="runJarBtn">运行 Jar 插件</button>
             </form>
             <p class="hint">
                 说明：通过反射加载 Jar 插件，调用指定类的指定方法。
@@ -339,36 +365,36 @@
                 </div>
                 <div class="result-label hidden" id="jarOutputLabel">输出结果</div>
                 <div class="result-box" id="jarOutput"></div>
-                <div class="result-label hidden" id="jarErrorLabel" style="color:var(--mdui-color-error);">错误信息</div>
+                <div class="result-label hidden" id="jarErrorLabel" style="color:#f44336;">错误信息</div>
                 <div class="result-box error hidden" id="jarError"></div>
             </div>
-        </mdui-card>
+        </div>
     </section>
 
     {{-- ===== 插件状态 ===== --}}
     <section id="section-status" class="page-section hidden">
         <div class="status-grid">
             {{-- Java 状态 --}}
-            <mdui-card variant="outlined" class="content-card">
+            <div class="mdui-card content-card">
                 <div class="card-header">
                     <h3 class="section-title">Java 插件状态</h3>
-                    <mdui-button variant="tonal" id="refreshJavaStatusBtn">刷新</mdui-button>
+                    <button class="mdui-btn mdui-ripple mdui-color-theme" id="refreshJavaStatusBtn">刷新</button>
                 </div>
                 <div id="javaStatusBody">
-                    <div class="loading"><mdui-circular-progress style="width:16px;height:16px;"></mdui-circular-progress> 加载中...</div>
+                    <div class="loading"><div class="mdui-spinner mdui-spinner-colorful" style="width:16px;height:16px;"></div> 加载中...</div>
                 </div>
-            </mdui-card>
+            </div>
 
             {{-- Jar 状态 --}}
-            <mdui-card variant="outlined" class="content-card">
+            <div class="mdui-card content-card">
                 <div class="card-header">
                     <h3 class="section-title">Jar 插件状态</h3>
-                    <mdui-button variant="tonal" id="refreshJarStatusBtn">刷新</mdui-button>
+                    <button class="mdui-btn mdui-ripple mdui-color-theme" id="refreshJarStatusBtn">刷新</button>
                 </div>
                 <div id="jarStatusBody">
-                    <div class="loading"><mdui-circular-progress style="width:16px;height:16px;"></mdui-circular-progress> 加载中...</div>
+                    <div class="loading"><div class="mdui-spinner mdui-spinner-colorful" style="width:16px;height:16px;"></div> 加载中...</div>
                 </div>
-            </mdui-card>
+            </div>
         </div>
     </section>
 </div>
@@ -436,6 +462,12 @@
         try { return JSON.stringify(obj, null, 2); } catch (e) { return String(obj); }
     }
 
+    /** mdui 1.x snackbar 提示 */
+    function toast(msg) {
+        if (window.mdui && mdui.snackbar) { mdui.snackbar(msg); }
+        else { alert(msg); }
+    }
+
     /** 状态徽章 */
     function stateBadge(state) {
         var s = String(state || '').toUpperCase();
@@ -489,14 +521,14 @@
 
     /* ====================== 登录 / 注册 ====================== */
 
-    /** 登录/注册 tab 切换 */
+    /** 登录/注册 tab 切换（通过 mdui-color-theme 类切换激活状态） */
     document.querySelectorAll('.login-tab').forEach(function (tab) {
         tab.addEventListener('click', function () {
             document.querySelectorAll('.login-tab').forEach(function (t) {
-                t.variant = 'text';
+                t.classList.remove('mdui-color-theme');
                 t.classList.remove('active');
             });
-            tab.variant = 'tonal';
+            tab.classList.add('mdui-color-theme');
             tab.classList.add('active');
             var isLogin = tab.dataset.tab === 'login';
             el('loginForm').classList.toggle('hidden', !isLogin);
@@ -595,12 +627,17 @@
     function switchSection(name) {
         document.querySelectorAll('.nav-btn').forEach(function (a) {
             var active = a.dataset.section === name;
-            a.variant = active ? 'tonal' : 'text';
+            a.classList.toggle('mdui-color-theme', active);
             a.classList.toggle('active', active);
         });
         document.querySelectorAll('.page-section').forEach(function (s) { s.classList.add('hidden'); });
         var sec = el('section-' + name);
         if (sec) sec.classList.remove('hidden');
+        // 重新初始化 mdui 组件（select、textfield 等）
+        if (window.mdui) {
+            if (mdui.mutation) mdui.mutation();
+            if (mdui.updateTextFields) mdui.updateTextFields();
+        }
         if (name === 'status') {
             loadJavaStatus();
             loadJarStatus();
@@ -647,7 +684,7 @@
 
     el('runJavaBtn').addEventListener('click', function () {
         var code = el('javaCode').value;
-        if (!code.trim()) { alert('请输入 Java 代码'); return; }
+        if (!code.trim()) { toast('请输入 Java 代码'); return; }
         var inMemory = el('javaInMemory').value;
         var btn = el('runJavaBtn');
         setBtnLoading(btn, true, '编译运行中...');
@@ -705,7 +742,7 @@
             in_memory: el('inMemory').value
         };
         if (!payload.jar_name || !payload.main_class) {
-            alert('请填写 Jar 文件名和主类全限定名');
+            toast('请填写 Jar 文件名和主类全限定名');
             return;
         }
         var btn = el('runJarBtn');
@@ -730,7 +767,7 @@
 
     /** 加载 Java 插件状态 */
     function loadJavaStatus() {
-        el('javaStatusBody').innerHTML = '<div class="loading"><mdui-circular-progress style="width:16px;height:16px;"></mdui-circular-progress> 加载中...</div>';
+        el('javaStatusBody').innerHTML = '<div class="loading"><div class="mdui-spinner mdui-spinner-colorful" style="width:16px;height:16px;"></div> 加载中...</div>';
         apiFetch('/api/plugin/java/status', { method: 'GET' })
             .then(function (r) {
                 var d = r.json.data || {};
@@ -771,7 +808,7 @@
 
     /** 加载 Jar 插件状态 */
     function loadJarStatus() {
-        el('jarStatusBody').innerHTML = '<div class="loading"><mdui-circular-progress style="width:16px;height:16px;"></mdui-circular-progress> 加载中...</div>';
+        el('jarStatusBody').innerHTML = '<div class="loading"><div class="mdui-spinner mdui-spinner-colorful" style="width:16px;height:16px;"></div> 加载中...</div>';
         apiFetch('/api/plugin/jar/status', { method: 'GET' })
             .then(function (r) {
                 var d = r.json.data || {};
@@ -813,6 +850,11 @@
     /* ====================== 初始化 ====================== */
 
     function init() {
+        // 初始化 mdui 组件（select、textfield 等）
+        if (window.mdui) {
+            if (mdui.mutation) mdui.mutation();
+            if (mdui.updateTextFields) mdui.updateTextFields();
+        }
         var token = getToken();
         if (!token) {
             showLogin();
