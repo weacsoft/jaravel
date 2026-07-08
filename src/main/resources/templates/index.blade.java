@@ -51,6 +51,30 @@
 </style>
 @endsection
 
+{{-- ===================== 抽屉导航栏 ===================== --}}
+@section('drawer')
+<div class="mdui-drawer mdui-drawer-close" id="mainDrawer">
+    <div class="drawer-header">
+        <div class="drawer-title">{{ $appName ?? 'jaravel' }}</div>
+        <div class="drawer-subtitle">插件运行平台</div>
+    </div>
+    <ul class="mdui-list">
+        <a href="/" class="mdui-list-item mdui-ripple">
+            <i class="mdui-list-item-icon mdui-icon material-icons">home</i>
+            <div class="mdui-list-item-content">首页</div>
+        </a>
+        <a href="/admin" class="mdui-list-item mdui-ripple">
+            <i class="mdui-list-item-icon mdui-icon material-icons">admin_panel_settings</i>
+            <div class="mdui-list-item-content">管理后台</div>
+        </a>
+        <a href="/user" class="mdui-list-item mdui-ripple">
+            <i class="mdui-list-item-icon mdui-icon material-icons">person</i>
+            <div class="mdui-list-item-content">用户中心</div>
+        </a>
+    </ul>
+</div>
+@endsection
+
 {{-- 页面主体内容 --}}
 @section('content')
 {{-- Hero 区域 --}}

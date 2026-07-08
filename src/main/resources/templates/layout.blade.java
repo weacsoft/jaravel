@@ -37,25 +37,16 @@
     @yield('head')
 </head>
 <body class="mdui-appbar-with-toolbar">
-    {{-- 顶部应用栏 --}}
+    {{-- 顶部应用栏：汉堡菜单 + 标题 --}}
     <div class="mdui-appbar mdui-appbar-fixed">
         <div class="mdui-toolbar mdui-color-theme">
-            <a href="javascript:;" class="mdui-btn mdui-btn-icon" id="drawerToggle" style="display:none">
+            <button class="mdui-btn mdui-btn-icon" id="drawerToggle">
                 <i class="mdui-icon material-icons">menu</i>
-            </a>
-            <a href="/" class="mdui-btn mdui-btn-icon">
-                <i class="mdui-icon material-icons">code</i>
-            </a>
+            </button>
             <a href="/" class="mdui-typo-title">{{ $appName ?? 'jaravel' }}</a>
             <div class="mdui-toolbar-spacer"></div>
-            <a href="/" class="mdui-btn mdui-ripple">
-                <i class="mdui-icon mdui-icon-left material-icons">home</i> 首页
-            </a>
-            <a href="/admin" class="mdui-btn mdui-ripple">
-                <i class="mdui-icon mdui-icon-left material-icons">admin_panel_settings</i> 管理后台
-            </a>
-            <a href="/user" class="mdui-btn mdui-ripple">
-                <i class="mdui-icon mdui-icon-left material-icons">person</i> 用户中心
+            <a href="https://github.com/lijialong1313/jaravel" class="mdui-btn mdui-btn-icon" target="_blank">
+                <i class="mdui-icon material-icons">code</i>
             </a>
         </div>
     </div>
@@ -75,28 +66,49 @@
     {{-- mdui 1.x JavaScript --}}
     <script src="https://unpkg.com/mdui@1.0.2/dist/js/mdui.min.js"></script>
     <script>
-        // 全局抽屉控制工具函数
+        // 全局抽屉控制工具（用于 showLogin/showMain 程序化控制 + 汉堡菜单点击切换）
         var jaravelDrawer = {
-            inst: null,
+            _inst: null,
+            _getInst: function() {
+                if (!this._inst) {
+                    var el = document.getElementById('mainDrawer');
+                    if (!el) return null;
+                    this._inst = new mdui.Drawer(el);
+                }
+                return this._inst;
+            },
             open: function() {
-                var el = document.getElementById('mainDrawer');
-                if (!el) return;
-                if (!this.inst) { this.inst = new mdui.Drawer(el); }
-                this.inst.open();
-                document.body.classList.add('mdui-drawer-body-left');
-                var toggle = document.getElementById('drawerToggle');
-                if (toggle) toggle.style.display = '';
+                var inst = this._getInst();
+                if (inst) inst.open();
             },
             close: function() {
-                if (this.inst) { this.inst.close(); }
-                document.body.classList.remove('mdui-drawer-body-left');
-                var toggle = document.getElementById('drawerToggle');
-                if (toggle) toggle.style.display = 'none';
+                var inst = this._getInst();
+                if (inst) inst.close();
+            },
+            toggle: function() {
+                var inst = this._getInst();
+                if (inst) inst.toggle();
             }
         };
-        // 顶栏菜单按钮点击切换抽屉
-        document.getElementById('drawerToggle').addEventListener('click', function() {
-            if (jaravelDrawer.inst) { jaravelDrawer.inst.toggle(); }
+        // 页面加载完成后绑定事件
+        document.addEventListener('DOMContentLoaded', function() {
+            // 汉堡菜单点击切换抽屉
+            var toggleBtn = document.getElementById('drawerToggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    jaravelDrawer.toggle();
+                });
+            }
+            // 监听抽屉开关事件，动态调整 body padding
+            var drawerEl = document.getElementById('mainDrawer');
+            if (drawerEl) {
+                drawerEl.addEventListener('opened.mdui.drawer', function() {
+                    document.body.classList.add('mdui-drawer-body-left');
+                });
+                drawerEl.addEventListener('closed.mdui.drawer', function() {
+                    document.body.classList.remove('mdui-drawer-body-left');
+                });
+            }
         });
     </script>
 
