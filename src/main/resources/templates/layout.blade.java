@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
     <meta name="renderer" content="webkit">
     <title>@yield('title', 'jaravel')</title>
-    {{-- mdui 1.x Material Design 1 --}}
-    <link rel="stylesheet" href="https://unpkg.com/mdui@1.0.2/dist/css/mdui.min.css">
+    {{-- mdui 1.x Material Design 1（本地资源） --}}
+    <link rel="stylesheet" href="@asset('css/mdui.min.css')">
     <style>
         .mdui-container { max-width: 1200px; padding: 24px; }
         .page-content { padding: 24px 0; }
@@ -63,8 +63,8 @@
         jaravel v0.1.2 &mdash; Powered by jblade + mdui Material Design 1
     </footer>
 
-    {{-- mdui 1.x JavaScript --}}
-    <script src="https://unpkg.com/mdui@1.0.2/dist/js/mdui.min.js"></script>
+    {{-- mdui 1.x JavaScript（本地资源） --}}
+    <script src="@asset('js/mdui.min.js')"></script>
     <script>
         // 全局抽屉控制工具（用于 showLogin/showMain 程序化控制 + 汉堡菜单点击切换）
         var jaravelDrawer = {
