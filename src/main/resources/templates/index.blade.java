@@ -64,7 +64,7 @@
             <div class="mdui-list-item-content">首页</div>
         </a>
         <a href="/admin" class="mdui-list-item mdui-ripple">
-            <i class="mdui-list-item-icon mdui-icon material-icons">admin_panel_settings</i>
+            <i class="mdui-list-item-icon mdui-icon material-icons">settings_applications</i>
             <div class="mdui-list-item-content">管理后台</div>
         </a>
         <a href="/user" class="mdui-list-item mdui-ripple">
@@ -83,7 +83,7 @@
     <p class="hero-desc">{{ $description }}</p>
     <div class="hero-actions">
         <a href="/admin" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent">
-            <i class="mdui-icon mdui-icon-left material-icons">admin_panel_settings</i> 进入管理后台
+            <i class="mdui-icon mdui-icon-left material-icons">settings_applications</i> 进入管理后台
         </a>
         <a href="/user" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme">
             <i class="mdui-icon mdui-icon-left material-icons">person</i> 用户中心
@@ -137,14 +137,14 @@
 <div class="card-grid">
     <div class="mdui-card mdui-ripple">
         <div class="feature-card-inner">
-            <i class="mdui-icon material-icons feature-icon">coffee</i>
+            <i class="mdui-icon material-icons feature-icon">local_cafe</i>
             <div class="feature-title">Java 在线编译</div>
             <div class="feature-desc">在浏览器中直接编写、编译并运行 Java 代码，即时查看执行结果，无需配置本地环境。</div>
         </div>
     </div>
     <div class="mdui-card mdui-ripple">
         <div class="feature-card-inner">
-            <i class="mdui-icon material-icons feature-icon">inventory_2</i>
+            <i class="mdui-icon material-icons feature-icon">archive</i>
             <div class="feature-title">Jar 插件热加载</div>
             <div class="feature-desc">动态加载与卸载 Jar 插件，无需重启服务即可完成热部署，插件管理灵活高效。</div>
         </div>
@@ -158,7 +158,7 @@
     </div>
     <div class="mdui-card mdui-ripple">
         <div class="feature-card-inner">
-            <i class="mdui-icon material-icons feature-icon">public</i>
+            <i class="mdui-icon material-icons feature-icon">language</i>
             <div class="feature-title">P2SP 远程执行</div>
             <div class="feature-desc">点对服务器点（P2SP）远程执行能力，跨节点分发与调度任务，扩展执行边界。</div>
         </div>

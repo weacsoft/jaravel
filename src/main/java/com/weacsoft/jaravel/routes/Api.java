@@ -172,6 +172,7 @@ public class Api {
                 admin.get("/multi-tenant/naming-demo", tenantController::namingDemo);
                 admin.get("/multi-tenant/tenants/{tenantId}/plugins", tenantController::listByTenant);
                 admin.post("/multi-tenant/tenants/{tenantId}/plugins", tenantController::registerForTenant);
+                admin.post("/multi-tenant/tenants/{tenantId}/upload", tenantController::uploadAndRegister);
                 admin.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/enable", tenantController::enableForTenant);
                 admin.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/disable", tenantController::disableForTenant);
 

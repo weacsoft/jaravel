@@ -203,7 +203,7 @@
             <div class="mdui-list-item-content">Java 在线编译</div>
         </li>
         <li class="mdui-list-item mdui-ripple" data-section="jar">
-            <i class="mdui-list-item-icon mdui-icon material-icons">inventory_2</i>
+            <i class="mdui-list-item-icon mdui-icon material-icons">archive</i>
             <div class="mdui-list-item-content">Jar 插件执行</div>
         </li>
         <li class="mdui-list-item mdui-ripple" data-section="status">

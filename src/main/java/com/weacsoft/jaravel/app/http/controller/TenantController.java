@@ -11,7 +11,11 @@ import com.weacsoft.jaravel.vendor.plugin.jar.multitenant.TenantContext;
 import com.weacsoft.jaravel.vendor.plugin.jar.multitenant.TenantNaming;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -98,6 +102,59 @@ public class TenantController implements Controllers {
         result.put("status", "REGISTERED");
         result.put("message", "插件已为租户 " + tenantId + " 注册，Bean/路由将自动前缀化");
         return ResponseBuilder.json(result);
+    }
+
+    /**
+     * 上传 JAR 文件并为指定租户注册插件（通用接口上传）。
+     * <p>
+     * 上传 JAR 文件后自动注册为租户插件，Bean 名称和路由路径自动按租户前缀化，
+     * 其他应用可通过 /{tenantId}/... 路径跨应用调用。
+     */
+    public Response uploadAndRegister(Request request) {
+        String tenantId = request.routeParam("tenantId");
+        String pluginId = request.input("pluginId", "custom-plugin");
+
+        if (!(jarPluginManager instanceof TenantAwareHotPluginManager tam)) {
+            return ResponseBuilder.error(400, "多租户插件模式未激活");
+        }
+
+        MultipartFile file = request.file("file");
+        if (file == null || file.isEmpty()) {
+            return ResponseBuilder.error(400, "缺少 file 参数（请上传 JAR 文件）");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null) originalFilename = "plugin.jar";
+        if (!originalFilename.endsWith(".jar")) {
+            return ResponseBuilder.error(400, "仅支持 .jar 文件");
+        }
+
+        // 如果未指定 pluginId，则用文件名
+        if ("custom-plugin".equals(pluginId)) {
+            pluginId = originalFilename.replace(".jar", "");
+        }
+
+        try {
+            // 保存到临时文件
+            Path tempFile = Files.createTempFile("tenant-upload-", ".jar");
+            file.transferTo(tempFile.toFile());
+
+            // 为租户注册插件
+            String fullPluginId = tam.registerPluginForTenant(tempFile, tenantId, pluginId, true);
+
+            // 删除临时文件（已加载到内存）
+            Files.deleteIfExists(tempFile);
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("tenantId", tenantId);
+            result.put("pluginId", pluginId);
+            result.put("fullPluginId", fullPluginId);
+            result.put("status", "UPLOADED_AND_REGISTERED");
+            result.put("message", "JAR 文件已上传并为租户 " + tenantId + " 注册，路由前缀：/" + tenantId + "/...");
+            return ResponseBuilder.json(result);
+        } catch (IOException e) {
+            return ResponseBuilder.error(500, "上传失败: " + e.getMessage());
+        }
     }
 
     /** 启用指定租户的插件 */

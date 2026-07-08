@@ -214,15 +214,15 @@
             <div class="mdui-list-item-content">仪表盘</div>
         </li>
         <li class="mdui-list-item mdui-ripple" data-section="sec-admins">
-            <i class="mdui-list-item-icon mdui-icon material-icons">manage_accounts</i>
+            <i class="mdui-list-item-icon mdui-icon material-icons">account_circle</i>
             <div class="mdui-list-item-content">管理员管理</div>
         </li>
         <li class="mdui-list-item mdui-ripple" data-section="sec-roles">
-            <i class="mdui-list-item-icon mdui-icon material-icons">shield</i>
+            <i class="mdui-list-item-icon mdui-icon material-icons">security</i>
             <div class="mdui-list-item-content">角色管理</div>
         </li>
         <li class="mdui-list-item mdui-ripple" data-section="sec-permissions">
-            <i class="mdui-list-item-icon mdui-icon material-icons">key</i>
+            <i class="mdui-list-item-icon mdui-icon material-icons">vpn_key</i>
             <div class="mdui-list-item-content">权限管理</div>
         </li>
         <li class="mdui-list-item mdui-ripple" data-section="sec-users">
@@ -230,19 +230,19 @@
             <div class="mdui-list-item-content">用户管理</div>
         </li>
         <li class="mdui-list-item mdui-ripple" data-section="sec-jar">
-            <i class="mdui-list-item-icon mdui-icon material-icons">inventory_2</i>
+            <i class="mdui-list-item-icon mdui-icon material-icons">archive</i>
             <div class="mdui-list-item-content">Jar 插件管理</div>
         </li>
         <li class="mdui-list-item mdui-ripple" data-section="sec-java">
-            <i class="mdui-list-item-icon mdui-icon material-icons">coffee</i>
+            <i class="mdui-list-item-icon mdui-icon material-icons">local_cafe</i>
             <div class="mdui-list-item-content">Java 插件管理</div>
         </li>
         <li class="mdui-list-item mdui-ripple" data-section="sec-tenant">
-            <i class="mdui-list-item-icon mdui-icon material-icons">corporate_fare</i>
+            <i class="mdui-list-item-icon mdui-icon material-icons">domain</i>
             <div class="mdui-list-item-content">多租户管理</div>
         </li>
         <li class="mdui-list-item mdui-ripple" data-section="sec-remote">
-            <i class="mdui-list-item-icon mdui-icon material-icons">public</i>
+            <i class="mdui-list-item-icon mdui-icon material-icons">language</i>
             <div class="mdui-list-item-content">远程执行</div>
         </li>
     </ul>
@@ -479,7 +479,7 @@
                             上传一个 <code>.java</code> 源文件，系统将编译并注册为插件。
                         </p>
                         <button class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent" onclick="registerJavaFromFile()">
-                            <i class="mdui-icon material-icons">upload_file</i> 上传并注册
+                            <i class="mdui-icon material-icons">file_upload</i> 上传并注册
                         </button>
                     </div>
                 </div>
@@ -506,7 +506,6 @@
                                 <input class="mdui-textfield-input" id="tenantIdInput" type="text" placeholder="请输入租户ID (tenantId)">
                             </div>
                             <button class="mdui-btn mdui-ripple mdui-color-theme" onclick="loadTenantPlugins()">查询</button>
-                            <button class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent" onclick="openTenantPluginModal()">注册插件</button>
                         </div>
                     </div>
                     <div class="table-wrap">
@@ -515,6 +514,35 @@
                             <tbody id="tenantPluginsBody"><tr class="empty-row"><td colspan="3">请输入租户ID后查询</td></tr></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            {{-- 通用接口上传：上传 JAR 文件为租户注册插件 --}}
+            <div class="mdui-card panel">
+                <div class="panel-inner">
+                    <div class="panel-header">
+                        <h3>通用接口上传</h3>
+                    </div>
+                    <p class="hint" style="margin-bottom:16px;">
+                        上传 JAR 插件文件，系统会自动为指定租户注册插件，Bean 名称和路由路径自动按租户前缀化。
+                        其他应用可通过 <code>/{tenantId}/...</code> 路径跨应用调用。
+                        请求：<code>POST /api/multi-tenant/tenants/{tenantId}/upload</code>
+                    </p>
+                    <div class="mdui-textfield" style="max-width:300px;margin-bottom:16px;">
+                        <label class="mdui-textfield-label">租户ID（与上方查询共用）</label>
+                        <input class="mdui-textfield-input" type="text" id="uploadTenantId" placeholder="例如：acme">
+                    </div>
+                    <div class="mdui-textfield" style="max-width:300px;margin-bottom:16px;">
+                        <label class="mdui-textfield-label">pluginId（可选，留空则用文件名）</label>
+                        <input class="mdui-textfield-input" type="text" id="uploadPluginId" placeholder="例如：blog-service">
+                    </div>
+                    <div class="mdui-textfield" style="margin-bottom:16px;">
+                        <input class="mdui-textfield-input" type="file" id="tenantJarFile" accept=".jar">
+                        <label class="mdui-textfield-label">选择 .jar 文件</label>
+                    </div>
+                    <button class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent" onclick="uploadTenantJar()">
+                        <i class="mdui-icon material-icons">cloud_upload</i> 上传并注册
+                    </button>
                 </div>
             </div>
         </section>
@@ -1358,23 +1386,34 @@ async function loadTenantPlugins() {
     }
 }
 
-function openTenantPluginModal() {
-    const tenantId = document.getElementById('tenantIdInput').value.trim();
-    if (!tenantId) { toast('请先输入租户ID', 'error'); return; }
-    openModal({
-        title: '为租户注册插件 (' + tenantId + ')',
-        submitText: '注册',
-        fields: [
-            { name: 'pluginId', label: 'pluginId', required: true, placeholder: '插件唯一标识' }
-        ],
-        onSubmit: async () => {
-            const vals = collectModalForm();
-            if (!vals.pluginId) throw new Error('pluginId 必填');
-            await apiPost('/api/multi-tenant/tenants/' + tenantId + '/plugins', vals);
-            toast('租户插件注册成功', 'success');
-            loadTenantPlugins();
-        }
-    });
+async function uploadTenantJar() {
+    var tenantId = document.getElementById('uploadTenantId').value.trim();
+    if (!tenantId) {
+        tenantId = document.getElementById('tenantIdInput').value.trim();
+    }
+    if (!tenantId) { toast('请输入租户ID', 'error'); return; }
+    var pluginId = document.getElementById('uploadPluginId').value.trim();
+    var fileInput = document.getElementById('tenantJarFile');
+    if (!fileInput || !fileInput.files.length) { toast('请选择 .jar 文件', 'error'); return; }
+    var file = fileInput.files[0];
+
+    var formData = new FormData();
+    formData.append('file', file);
+    if (pluginId) formData.append('pluginId', pluginId);
+
+    try {
+        var token = localStorage.getItem('adminToken');
+        var resp = await fetch('/api/multi-tenant/tenants/' + tenantId + '/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+        });
+        var data = await resp.json();
+        if (data.code !== 0 && data.code !== 200) throw new Error(data.message || '上传失败');
+        toast('插件已上传并注册，路由前缀：/' + tenantId + '/...', 'success');
+        document.getElementById('tenantIdInput').value = tenantId;
+        loadTenantPlugins();
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 async function toggleTenantPlugin(tenantId, pluginId, enable) {
