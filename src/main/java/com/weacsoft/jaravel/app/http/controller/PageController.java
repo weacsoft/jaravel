@@ -51,4 +51,13 @@ public class PageController {
         data.put("appName", "jaravel");
         return ResponseBuilder.view("user", data);
     }
+
+    /**
+     * 验证码演示页面。
+     */
+    public Response captchaDemo(Request request) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("appName", "jaravel");
+        return ResponseBuilder.view("captcha-demo", data);
+    }
 }

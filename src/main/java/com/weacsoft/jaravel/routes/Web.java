@@ -1,6 +1,7 @@
 package com.weacsoft.jaravel.routes;
 
 import com.weacsoft.jaravel.app.http.controller.WireDemoController;
+import com.weacsoft.jaravel.app.http.controller.PageController;
 import com.weacsoft.jaravel.vendor.http.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.route.Router;
 import org.springframework.context.ApplicationContext;
@@ -17,6 +18,12 @@ public class Web {
     public void register(Router router, ApplicationContext context) {
         // 首页重定向到 index.html
         router.get("/", request -> ResponseBuilder.redirect("/index.html"));
+
+        // 验证码演示页面
+        router.get("/captcha-demo", request -> {
+            PageController controller = context.getBean(PageController.class);
+            return controller.captchaDemo(request);
+        });
 
         // Wire Demo 页面（初始渲染）
         router.get("/wire-demo", request -> {

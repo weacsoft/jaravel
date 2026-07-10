@@ -2,6 +2,7 @@ package com.weacsoft.jaravel.app.http.controller;
 
 import com.weacsoft.jaravel.app.model.User;
 import com.weacsoft.jaravel.app.model.admin.Admin;
+import com.weacsoft.jaravel.app.service.CaptchaService;
 import com.weacsoft.jaravel.app.service.UserService;
 import com.weacsoft.jaravel.vendor.auth.contract.AuthGuard;
 import com.weacsoft.jaravel.vendor.auth.facade.Auth;
@@ -11,6 +12,7 @@ import com.weacsoft.jaravel.vendor.http.response.Response;
 import com.weacsoft.jaravel.vendor.http.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.jwt.JwtGuard;
 import org.springframework.stereotype.Controller;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -24,14 +26,25 @@ import java.util.Map;
 @Controller
 public class AuthController implements Controllers {
 
+    @Autowired
+    private CaptchaService captchaService;
+
     // ===== 管理员认证 =====
 
     /**
-     * 管理员登录（用户名 + 密码），登入 admin guard，返回 JWT token。
+     * 管理员登录（用户名 + 密码 + 验证码），登入 admin guard，返回 JWT token。
      */
     public Response adminLogin(Request request) {
         String username = request.input("username");
         String password = request.input("password");
+        String captchaType = request.input("captchaType", "rotate");
+        String captchaKey = request.input("captchaKey");
+        String captchaInput = request.input("captchaInput");
+
+        // 验证码校验（无状态：直接验证 captchaKey + 用户输入）
+        if (!captchaService.verify(captchaType, captchaKey, captchaInput)) {
+            return ResponseBuilder.error(403, "验证码校验失败或已过期，请重新完成验证");
+        }
 
         Admin admin = Admin.findByUsername(username);
         if (admin == null || !password.equals(admin.getPassword())) {
@@ -94,6 +107,15 @@ public class AuthController implements Controllers {
     public Response userLogin(Request request) {
         String number = request.input("number");
         String password = request.input("password");
+        String captchaType = request.input("captchaType", "rotate");
+        String captchaKey = request.input("captchaKey");
+        String captchaInput = request.input("captchaInput");
+
+        // 验证码校验（无状态：直接验证 captchaKey + 用户输入）
+        if (!captchaService.verify(captchaType, captchaKey, captchaInput)) {
+            return ResponseBuilder.error(403, "验证码校验失败或已过期，请重新完成验证");
+        }
+
         User user = UserService.login(number, password);
         Auth.login(user);
         Map<String, Object> result = new LinkedHashMap<>();

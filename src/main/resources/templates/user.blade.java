@@ -7,6 +7,7 @@
 
 {{-- 页面专属样式 --}}
 @section('head')
+<script src="/js/jaravel-captcha.js"></script>
 <style>
     /* ===== 登录 / 注册视图 ===== */
     .login-wrap {
@@ -245,6 +246,11 @@
                 <input class="mdui-textfield-input" type="password" placeholder="请输入密码" id="loginPassword" required>
             </div>
             <div id="loginAlert"></div>
+            {{-- 验证码区域（点击登录时才显示） --}}
+            <div id="captchaArea" style="display:none; margin-bottom:16px;">
+                <div id="captchaContainer"></div>
+                <div id="captchaStatus" style="text-align:center;margin-top:4px;font-size:13px;color:#757575;">请完成验证后自动登录</div>
+            </div>
             <button type="submit" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent mdui-btn-block" id="loginBtn" style="margin-top:8px;">登录</button>
             <div class="hint" style="text-align:center;margin-top:8px;">调用接口：POST /api/auth/user/login</div>
         </form>
@@ -420,6 +426,11 @@
 (function () {
     'use strict';
 
+    /* 自带 captcha 模块 — OOP API */
+    let captchaKey = null;
+    let captchaInput = null;
+    let captchaInstance = null;
+
     /* ====================== 工具函数 ====================== */
 
     var TOKEN_KEY = 'user_token';
@@ -520,6 +531,7 @@
         el('loginView').classList.remove('hidden');
         el('appView').classList.add('hidden');
         if (typeof jaravelDrawer !== 'undefined') jaravelDrawer.close();
+        resetCaptcha();
     }
     function showApp() {
         el('loginView').classList.add('hidden');
@@ -560,15 +572,85 @@
         c.innerHTML = '<div class="alert alert-' + (type || 'error') + '">' + esc(msg) + '</div>';
     }
 
+    /* ====================== 自带 captcha 模块（OOP API） ====================== */
+    /* 流程：点击登录 → 弹出验证码 → 完成后自动提交登录 */
+    let captchaKey = null;
+    let captchaInput = null;
+    let captchaInstance = null;
+    let loginPending = false;
+
+    /** 弹出验证码 */
+    function showCaptchaForLogin() {
+        document.getElementById('captchaArea').style.display = 'block';
+        document.getElementById('captchaStatus').innerHTML = '请完成验证后自动登录';
+
+        if (captchaInstance) { captchaInstance.destroy(); captchaInstance = null; }
+        captchaKey = null;
+        captchaInput = null;
+
+        captchaInstance = Captcha.init('captchaContainer', {
+            type: 'rotate',
+            autoVerify: false,
+            onComplete: function(key, input) {
+                captchaKey = key;
+                captchaInput = input;
+                document.getElementById('captchaStatus').innerHTML =
+                    '<i class="mdui-icon material-icons" style="color:#4caf50">check_circle</i> 验证完成，正在登录...';
+                if (loginPending) { submitLogin(); }
+            }
+        });
+        // 构造函数已自动加载验证码
+    }
+
+    /** 重置验证码状态 */
+    function resetCaptcha() {
+        captchaKey = null;
+        captchaInput = null;
+        loginPending = false;
+        var area = document.getElementById('captchaArea');
+        if (area) area.style.display = 'none';
+        if (captchaInstance) { captchaInstance.destroy(); captchaInstance = null; }
+        var status = document.getElementById('captchaStatus');
+        if (status) status.innerHTML = '请完成验证后自动登录';
+    }
+
     /** 登录提交 */
     el('loginForm').addEventListener('submit', function (e) {
         e.preventDefault();
+        doLogin();
+    });
+
+    /**
+     * 登录流程：校验 → 弹验证码 → 自动提交
+     */
+    function doLogin() {
         showAlert('loginAlert', '');
+        var number = el('loginNumber').value.trim();
+        var password = el('loginPassword').value;
+        if (!number || !password) {
+            showAlert('loginAlert', '请输入工号和密码');
+            return;
+        }
+        if (!captchaKey || !captchaInput) {
+            loginPending = true;
+            showCaptchaForLogin();
+            return;
+        }
+        submitLogin();
+    }
+
+    /**
+     * 提交登录请求
+     */
+    function submitLogin() {
         var btn = el('loginBtn');
         setBtnLoading(btn, true, '登录中...');
         var payload = {
             number: el('loginNumber').value.trim(),
-            password: el('loginPassword').value
+            password: el('loginPassword').value,
+            captchaType: 'rotate',
+            captchaKey: captchaKey,
+            captchaInput: captchaInput
         };
         apiFetch('/api/auth/user/login', { method: 'POST', body: payload })
             .then(function (r) {
@@ -576,17 +658,22 @@
                 if (r.ok && r.json.code === 200 && d.token) {
                     setToken(d.token);
                     fillUserInfo(d.user || {});
+                    loginPending = false;
                     showApp();
                     switchSection('java');
                 } else {
                     showAlert('loginAlert', d.message || r.json.message || '登录失败，请检查工号和密码');
+                    resetCaptcha();
                 }
             })
             .catch(function (err) {
                 showAlert('loginAlert', '请求失败：' + (err && err.message ? err.message : err));
+                resetCaptcha();
             })
-            .finally(function () { setBtnLoading(btn, false); });
-    });
+            .finally(function () {
+                setBtnLoading(btn, false);
+            });
+    }
 
     /** 注册提交 */
     el('registerForm').addEventListener('submit', function (e) {

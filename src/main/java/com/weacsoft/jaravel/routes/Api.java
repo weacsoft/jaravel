@@ -1,6 +1,7 @@
 package com.weacsoft.jaravel.routes;
 
 import com.weacsoft.jaravel.app.http.controller.AuthController;
+import com.weacsoft.jaravel.app.http.controller.CaptchaController;
 import com.weacsoft.jaravel.app.http.controller.AdminRbacController;
 import com.weacsoft.jaravel.app.http.controller.PageController;
 import com.weacsoft.jaravel.app.http.controller.PluginController;
@@ -34,6 +35,7 @@ public class Api {
 
     public void register(Router router, ApplicationContext context) {
         AuthController authController = context.getBean(AuthController.class);
+        CaptchaController captchaController = context.getBean(CaptchaController.class);
         UserController userController = context.getBean(UserController.class);
         AdminRbacController rbacController = context.getBean(AdminRbacController.class);
         UserRbacController userRbac = context.getBean(UserRbacController.class);
@@ -53,6 +55,11 @@ public class Api {
         router.get("/user", pageController::user);
 
         router.group(Map.of(Route.Group.PREFIX, "api"), api -> {
+            // ===== 验证码接口（无需认证） =====
+            api.get("/captcha/generate", captchaController::generate);
+            api.post("/captcha/generate", captchaController::generate);
+            api.post("/captcha/verify", captchaController::verify);
+
             // ===== 公开路由（无需认证） =====
             api.post("/auth/admin/login", authController::adminLogin);
             api.post("/auth/user/register", authController::register);

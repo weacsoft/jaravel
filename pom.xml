@@ -96,6 +96,13 @@
             <version>0.1.2</version>
         </dependency>
 
+        <!-- 自带验证码模块（支持数字、算术、滑动、旋转、文字点选） -->
+        <dependency>
+            <groupId>io.github.lijialong1313</groupId>
+            <artifactId>captcha</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+
         <!-- Wire 部分更新模块（Laravel Livewire 风格，支持自定义 update URL 和 @section 无感更新） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>

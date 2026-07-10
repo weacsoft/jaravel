@@ -88,6 +88,9 @@
         <a href="/user" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme">
             <i class="mdui-icon mdui-icon-left material-icons">person</i> 用户中心
         </a>
+        <a href="/captcha-demo" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme">
+            <i class="mdui-icon mdui-icon-left material-icons">verified_user</i> 验证码演示
+        </a>
     </div>
 </section>
 

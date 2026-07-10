@@ -12,6 +12,7 @@
 ============================================================ --}}
 
 @section('head')
+<script src="/js/jaravel-captcha.js"></script>
 <style>
     /* ===== 管理后台专属样式（基于 mdui 1.x） ===== */
     /* 页面头部栏（标题 + 用户信息） */
@@ -268,6 +269,11 @@
                            placeholder="请输入密码" required autocomplete="current-password">
                 </div>
                 <div id="loginAlert" class="alert-box"></div>
+                {{-- 验证码区域（点击登录时才显示） --}}
+<div id="captchaArea" style="display:none; margin-bottom:16px;">
+    <div id="captchaContainer"></div>
+    <div id="captchaStatus" style="text-align:center;margin-top:4px;font-size:13px;color:#757575;">请完成验证后自动登录</div>
+</div>
                 <button type="button" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent login-btn" id="loginBtn">登 录</button>
             </form>
         </div>
@@ -602,6 +608,10 @@ let token = localStorage.getItem('admin_token');
 let currentAdmin = JSON.parse(localStorage.getItem('admin_info') || 'null');
 let modalSubmitHandler = null;
 let modalDialogInst = null;
+/* 自带 captcha 模块 */
+let captchaKey = null;
+let captchaInput = null;
+let captchaInstance = null;
 
 /* ===================== 工具函数 ===================== */
 // 从对象中按优先键取值，兼容 snake_case / camelCase
@@ -710,11 +720,55 @@ function handleUnauthorized() {
     toast('登录已过期，请重新登录', 'error');
 }
 
+/* ===================== 自带 captcha 模块（OOP API） ===================== */
+// 流程：点击登录 → 弹出验证码 → 完成后自动提交登录
+let captchaKey = null;
+let captchaInput = null;
+let captchaInstance = null;
+let loginPending = false;  // 标记是否正在等待验证码完成以执行登录
+
+function showCaptchaForLogin() {
+    // 显示验证码区域
+    document.getElementById('captchaArea').style.display = 'block';
+    document.getElementById('captchaStatus').innerHTML = '请完成验证后自动登录';
+
+    // 每次都重新创建实例（避免旧 captchaKey 已过期）
+    if (captchaInstance) {
+        captchaInstance.destroy();
+        captchaInstance = null;
+    }
+    captchaKey = null;
+    captchaInput = null;
+
+    captchaInstance = Captcha.init('captchaContainer', {
+        type: 'rotate',
+        autoVerify: false,
+        onComplete: function(key, input) {
+            captchaKey = key;
+            captchaInput = input;
+            document.getElementById('captchaStatus').innerHTML =
+                '<i class="mdui-icon material-icons" style="color:#4caf50">check_circle</i> 验证完成，正在登录...';
+            // 验证码完成 → 自动提交登录
+            if (loginPending) {
+                submitLogin();
+            }
+        }
+    });
+    // 构造函数已自动加载验证码，不需要再调 refresh()
+}
+
 /* ===================== 登录 / 退出 ===================== */
 function showLogin() {
     document.getElementById('loginView').style.display = 'flex';
     document.getElementById('mainView').style.display = 'none';
     if (typeof jaravelDrawer !== 'undefined') jaravelDrawer.close();
+    // 重置验证码状态
+    captchaKey = null;
+    captchaInput = null;
+    loginPending = false;
+    document.getElementById('captchaArea').style.display = 'none';
+    document.getElementById('captchaStatus').innerHTML = '请完成验证后自动登录';
+    if (captchaInstance) { captchaInstance.destroy(); captchaInstance = null; }
 }
 
 function showMain() {
@@ -749,9 +803,50 @@ async function loadAdminMe() {
     }
 }
 
-// 登录表单提交
+// 登录表单提交（由登录按钮触发）
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    doLogin();
+});
+
+// 登录按钮点击
+document.getElementById('loginBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    doLogin();
+});
+
+/**
+ * 登录流程：
+ * 1. 校验用户名密码已填
+ * 2. 如果验证码未完成 → 弹出验证码，等 onComplete 回调自动提交
+ * 3. 如果验证码已完成 → 直接提交登录
+ */
+function doLogin() {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const alertBox = document.getElementById('loginAlert');
+    alertBox.innerHTML = '';
+
+    if (!username || !password) {
+        alertBox.innerHTML = '<div class="alert-error">请输入用户名和密码</div>';
+        return;
+    }
+
+    // 如果验证码还没完成 → 弹出验证码
+    if (!captchaKey || !captchaInput) {
+        loginPending = true;
+        showCaptchaForLogin();
+        return;
+    }
+
+    // 验证码已完成 → 提交登录
+    submitLogin();
+}
+
+/**
+ * 提交登录请求（携带验证码数据）
+ */
+async function submitLogin() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
     const alertBox = document.getElementById('loginAlert');
@@ -764,30 +859,37 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         const data = await api('/api/auth/admin/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username, password: password })
+            body: JSON.stringify({
+                username: username,
+                password: password,
+                captchaType: 'rotate',
+                captchaKey: captchaKey,
+                captchaInput: captchaInput
+            })
         });
         token = pick(data, 'token', 'accessToken', 'access_token');
         if (!token) throw new Error('登录返回数据异常：未获取到 token');
         localStorage.setItem('admin_token', token);
         currentAdmin = pick(data, 'admin', 'adminInfo', 'user') || data;
         localStorage.setItem('admin_info', JSON.stringify(currentAdmin));
-        // 登录后调用 /me 拉取最新管理员信息（best effort）
         await loadAdminMe();
         toast('登录成功', 'success');
+        loginPending = false;
         showMain();
     } catch (err) {
         alertBox.innerHTML = '<div class="alert-error">' + esc(err.message) + '</div>';
+        // 登录失败：重置验证码，用户可重新点登录
+        captchaKey = null;
+        captchaInput = null;
+        loginPending = false;
+        document.getElementById('captchaArea').style.display = 'none';
+        if (captchaInstance) { captchaInstance.destroy(); captchaInstance = null; }
+        document.getElementById('captchaStatus').innerHTML = '请完成验证后自动登录';
     } finally {
         btn.disabled = false;
         btn.textContent = oldText;
     }
-});
-
-// 登录按钮触发提交（手动 requestSubmit，兼容原生按钮）
-document.getElementById('loginBtn').addEventListener('click', (e) => {
-    e.preventDefault();
-    document.getElementById('loginForm').requestSubmit();
-});
+}
 
 async function logout() {
     if (!await confirmDialog('确定退出登录吗？')) return;

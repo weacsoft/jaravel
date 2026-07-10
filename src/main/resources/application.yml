@@ -85,6 +85,32 @@ jaravel:
         host: 127.0.0.1
         port: 6379
 
+  # 验证码配置（项目自带 captcha 模块）
+  captcha:
+    enabled: true
+    width: 300
+    height: 150
+    length: 4                    # 数字/算术验证码字符数量
+    expire-seconds: 300
+    tolerance: 8.0
+    trajectory-enabled: true
+    # 干扰强度级别 1-5（1=极轻, 3=中等, 5=极强）
+    interference-level: 3
+    # 字体配置（null=自动检测系统字体）
+    font-family: null
+    cjk-font-family: null        # 中文字体，null=自动检测系统可用字体
+    font-path: null              # 自定义字体文件路径(.ttf/.otf)
+    # 点选验证码配置
+    click-target-count: 3        # 需要点选的目标文字数量
+    click-decoy-count: 3         # 干扰文字数量
+    # 数据加密配置（none=不加密纯Base64, aes=AES/CBC, rsa=RSA/OAEP）
+    encryption-type: aes
+    encryption-key: jaravel-captcha-default-key  # 生产环境请修改
+    # 自定义背景图（滑动/旋转验证码，支持多张随机选择）
+    # background-images:
+    #   - classpath:captcha/bg1.jpg
+    #   - classpath:captcha/bg2.jpg
+
 logging:
   level:
     com.weacsoft.jaravel: DEBUG
