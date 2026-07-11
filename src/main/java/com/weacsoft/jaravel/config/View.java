@@ -2,7 +2,7 @@ package com.weacsoft.jaravel.config;
 
 import com.weacsoft.jaravel.vendor.cache.CacheManager;
 import com.weacsoft.jaravel.vendor.cache.CacheStore;
-import com.weacsoft.jaravel.vendor.http.response.ResponseBuilder;
+import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.jblade.BladeEngine;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;

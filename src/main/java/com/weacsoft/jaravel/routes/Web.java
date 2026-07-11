@@ -2,7 +2,7 @@ package com.weacsoft.jaravel.routes;
 
 import com.weacsoft.jaravel.app.http.controller.WireDemoController;
 import com.weacsoft.jaravel.app.http.controller.PageController;
-import com.weacsoft.jaravel.vendor.http.response.ResponseBuilder;
+import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.route.Router;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;

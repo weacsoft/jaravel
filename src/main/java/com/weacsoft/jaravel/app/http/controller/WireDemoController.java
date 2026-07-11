@@ -1,7 +1,7 @@
 package com.weacsoft.jaravel.app.http.controller;
 
-import com.weacsoft.jaravel.vendor.http.request.Request;
-import com.weacsoft.jaravel.vendor.http.response.Response;
+import com.weacsoft.jaravel.vendor.http.controller.request.Request;
+import com.weacsoft.jaravel.vendor.http.controller.response.Response;
 import com.weacsoft.jaravel.vendor.wire.WireService;
 import org.springframework.stereotype.Component;
 

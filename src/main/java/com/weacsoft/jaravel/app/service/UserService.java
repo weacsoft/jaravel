@@ -4,7 +4,7 @@ import com.weacsoft.jaravel.app.model.User;
 import com.weacsoft.jaravel.app.model.user.UserRole;
 import com.weacsoft.jaravel.vendor.core.SpringContext;
 import com.weacsoft.jaravel.vendor.event.Dispatcher;
-import com.weacsoft.jaravel.vendor.event.example.UserRegisteredEvent;
+import com.weacsoft.jaravel.app.event.UserRegisteredEvent;
 import gaarason.database.contract.eloquent.Record;
 
 import java.util.List;

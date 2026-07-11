@@ -4,10 +4,10 @@ import com.weacsoft.jaravel.app.model.admin.Admin;
 import com.weacsoft.jaravel.app.model.admin.AdminPermission;
 import com.weacsoft.jaravel.app.model.admin.AdminRole;
 import com.weacsoft.jaravel.app.service.AdminRolePermissionService;
-import com.weacsoft.jaravel.vendor.controller.Controllers;
-import com.weacsoft.jaravel.vendor.http.request.Request;
-import com.weacsoft.jaravel.vendor.http.response.Response;
-import com.weacsoft.jaravel.vendor.http.response.ResponseBuilder;
+import com.weacsoft.jaravel.vendor.http.controller.Controllers;
+import com.weacsoft.jaravel.vendor.http.controller.request.Request;
+import com.weacsoft.jaravel.vendor.http.controller.response.Response;
+import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
 import org.springframework.stereotype.Controller;
 
 import java.util.LinkedHashMap;

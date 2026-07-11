@@ -1,7 +1,7 @@
 package com.weacsoft.jaravel.app.provider;
 
 import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
-import com.weacsoft.jaravel.vendor.http.response.ResponseBuilder;
+import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.jblade.BladeAssetHelper;
 import com.weacsoft.jaravel.vendor.jblade.BladeEngine;
 import com.weacsoft.jaravel.vendor.utils.memory.MemoryClassLoader;

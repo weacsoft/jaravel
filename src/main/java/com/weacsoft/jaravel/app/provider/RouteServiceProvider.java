@@ -2,8 +2,8 @@ package com.weacsoft.jaravel.app.provider;
 
 import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
 import com.weacsoft.jaravel.vendor.auth.middleware.Authenticate;
-import com.weacsoft.jaravel.vendor.middleware.ConvertEmptyStringsToNull;
-import com.weacsoft.jaravel.vendor.middleware.TrimStrings;
+import com.weacsoft.jaravel.vendor.http.middleware.ConvertEmptyStringsToNull;
+import com.weacsoft.jaravel.vendor.http.middleware.TrimStrings;
 import com.weacsoft.jaravel.vendor.route.Router;
 import com.weacsoft.jaravel.routes.Api;
 import com.weacsoft.jaravel.routes.Web;

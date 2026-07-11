@@ -1,9 +1,9 @@
 package com.weacsoft.jaravel.app.http.controller;
 
-import com.weacsoft.jaravel.vendor.controller.Controllers;
-import com.weacsoft.jaravel.vendor.http.request.Request;
-import com.weacsoft.jaravel.vendor.http.response.Response;
-import com.weacsoft.jaravel.vendor.http.response.ResponseBuilder;
+import com.weacsoft.jaravel.vendor.http.controller.Controllers;
+import com.weacsoft.jaravel.vendor.http.controller.request.Request;
+import com.weacsoft.jaravel.vendor.http.controller.response.Response;
+import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.plugin.jar.remote.client.RemoteExecutionDispatcher;
 import com.weacsoft.jaravel.vendor.plugin.jar.remote.client.SubServerInfo;
 import com.weacsoft.jaravel.vendor.plugin.jar.remote.server.RemotePluginServer;
