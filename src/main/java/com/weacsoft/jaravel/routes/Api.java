@@ -183,6 +183,11 @@ public class Api {
                 admin.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/enable", tenantController::enableForTenant);
                 admin.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/disable", tenantController::disableForTenant);
 
+                // 共享接口管理（全手动指定，反射调用）
+                admin.post("/multi-tenant/shared-interfaces/register", tenantController::registerSharedInterface);
+                admin.post("/multi-tenant/shared-interfaces/{name}/invoke", tenantController::invokeSharedInterface);
+                admin.get("/multi-tenant/shared-interfaces", tenantController::listSharedInterfaces);
+
                 // 远程插件执行管理
                 admin.get("/remote/status", remoteController::status);
                 admin.get("/remote/sub-servers", remoteController::listSubServers);

@@ -1,4 +1,4 @@
-package com.weacsoft.jaravel.config;
+package com.weacsoft.jaravel.config.database;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.weacsoft.jaravel.vendor.core.SpringContext;
@@ -25,7 +25,7 @@ import org.springframework.core.env.Environment;
  * 未受 Spring 管理的裸实例。
  */
 @Configuration
-public class Database {
+public class DatabaseConfig {
 
     /**
      * 创建并初始化 gaarason Container。

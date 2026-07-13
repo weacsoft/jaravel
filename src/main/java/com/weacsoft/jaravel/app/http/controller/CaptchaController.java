@@ -1,6 +1,7 @@
 package com.weacsoft.jaravel.app.http.controller;
 
 import com.weacsoft.jaravel.app.service.CaptchaService;
+import com.weacsoft.jaravel.vendor.captcha.CaptchaProperties;
 import com.weacsoft.jaravel.vendor.captcha.CaptchaResult;
 import com.weacsoft.jaravel.vendor.captcha.VerifyResult;
 import com.weacsoft.jaravel.vendor.http.controller.Controllers;
@@ -41,12 +42,17 @@ public class CaptchaController implements Controllers {
      * 生成验证码。
      * <p>
      * 请求参数：type = number | arithmetic | slider | rotate | click（默认 rotate）
+     * 可选查询参数（per-instance 配置覆盖）：clickTargetCount、clickDecoyCount、length、width、height 等
      * 响应格式：{code: 200, data: {captchaKey, type, imageBase64, expireTime, extra}}
      */
     public Response generate(Request request) {
         String type = request.get("type", "rotate");
         try {
-            CaptchaResult result = captchaService.generate(type);
+            // 检查是否有 per-instance 配置覆盖参数
+            CaptchaProperties overrides = buildOverridesFromRequest(request);
+            CaptchaResult result = (overrides != null)
+                    ? captchaService.generate(type, overrides)
+                    : captchaService.generate(type);
 
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("captchaKey", result.getCaptchaKey());
@@ -66,6 +72,56 @@ public class CaptchaController implements Controllers {
                     .contentType("application/json; charset=utf-8")
                     .body(ResponseBuilder.toJson(Map.of("code", 500, "msg", "验证码生成失败: " + e.getMessage())));
         }
+    }
+
+    /**
+     * 从请求参数构建 per-instance 配置覆盖。
+     * 如果请求中没有配置参数，返回 null（使用全局默认配置）。
+     */
+    private CaptchaProperties buildOverridesFromRequest(Request request) {
+        CaptchaProperties overrides = null;
+        String[] configKeys = {"clickTargetCount", "clickDecoyCount", "length", "width", "height",
+                "tolerance", "noise", "interfereLines"};
+
+        for (String key : configKeys) {
+            String val = request.get(key, (String) null);
+            if (val != null && !val.isEmpty()) {
+                if (overrides == null) {
+                    overrides = CaptchaProperties.createDefault();
+                }
+                try {
+                    switch (key) {
+                        case "clickTargetCount":
+                            overrides.setClickTargetCount(Integer.parseInt(val));
+                            break;
+                        case "clickDecoyCount":
+                            overrides.setClickDecoyCount(Integer.parseInt(val));
+                            break;
+                        case "length":
+                            overrides.setLength(Integer.parseInt(val));
+                            break;
+                        case "width":
+                            overrides.setWidth(Integer.parseInt(val));
+                            break;
+                        case "height":
+                            overrides.setHeight(Integer.parseInt(val));
+                            break;
+                        case "tolerance":
+                            overrides.setTolerance(Double.parseDouble(val));
+                            break;
+                        case "noise":
+                            overrides.setNoiseCount(Integer.parseInt(val));
+                            break;
+                        case "interfereLines":
+                            overrides.setInterfereCount(Integer.parseInt(val));
+                            break;
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("[captcha] 无效的配置参数 {}={}", key, val);
+                }
+            }
+        }
+        return overrides;
     }
 
     /**

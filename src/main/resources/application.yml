@@ -7,6 +7,10 @@ spring:
     driver-class-name: org.sqlite.JDBC
 
 jaravel:
+  # Wire 部分更新模块（Laravel Livewire 风格）
+  wire:
+    auto-inject-js: true
+    js-path: /static/wire.js
   auth:
     default-guard: api
   jwt:

@@ -20,7 +20,7 @@
 
     <groupId>com.weacsoft</groupId>
     <artifactId>jaravel</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.2</version>
     <name>jaravel</name>
     <description>多租户 Jar/Java 热更新在线运行平台</description>
 

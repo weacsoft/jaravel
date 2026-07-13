@@ -6,6 +6,7 @@ import com.weacsoft.jaravel.vendor.http.controller.response.Response;
 import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.plugin.jar.manager.HotPluginManager;
 import com.weacsoft.jaravel.vendor.plugin.jar.model.PluginInfo;
+import com.weacsoft.jaravel.vendor.plugin.jar.model.SharedInterfaceDescriptor;
 import com.weacsoft.jaravel.vendor.plugin.jar.multitenant.TenantAwareHotPluginManager;
 import com.weacsoft.jaravel.vendor.plugin.jar.multitenant.TenantContext;
 import com.weacsoft.jaravel.vendor.plugin.jar.multitenant.TenantNaming;
@@ -214,6 +215,89 @@ public class TenantController implements Controllers {
         result.put("prefixedRoutePath", TenantNaming.prefixRoutePath(tenantId, routePath));
         result.put("fullPluginId", TenantNaming.buildPluginId(tenantId, "blog", separator));
         result.put("message", "多租户命名规则演示：Bean 名称和路由路径自动按租户前缀化");
+        return ResponseBuilder.json(result);
+    }
+
+    /**
+     * 注册共享接口（全手动指定）。
+     * <p>
+     * 用字符串指定插件中的哪个 Bean 的哪个方法作为共享接口，
+     * 开发时无需包含目标类，运行时通过反射调用。
+     * <p>
+     * POST /api/multi-tenant/shared-interfaces/register
+     * body: {interfaceName, pluginId, beanName, methodName, description?}
+     */
+    public Response registerSharedInterface(Request request) {
+        String interfaceName = request.input("interfaceName");
+        String pluginId = request.input("pluginId");
+        String beanName = request.input("beanName");
+        String methodName = request.input("methodName");
+        String description = request.input("description", "");
+
+        if (interfaceName.isEmpty() || pluginId.isEmpty()
+                || beanName.isEmpty() || methodName.isEmpty()) {
+            return ResponseBuilder.error(400, "缺少必要参数: interfaceName, pluginId, beanName, methodName");
+        }
+
+        boolean success = jarPluginManager.registerSharedInterface(
+                interfaceName, pluginId, beanName, methodName, description);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("interfaceName", interfaceName);
+        result.put("pluginId", pluginId);
+        result.put("beanName", beanName);
+        result.put("methodName", methodName);
+        result.put("success", success);
+        result.put("status", success ? "REGISTERED" : "REGISTER_FAILED");
+        if (!success) {
+            result.put("message", "注册失败，请检查插件是否已启用且Bean已注册");
+        }
+        return ResponseBuilder.json(result);
+    }
+
+    /**
+     * 调用共享接口。
+     * <p>
+     * 通过共享接口名称反射调用方法，请求参数和返回参数都用 Map 表示。
+     * <p>
+     * POST /api/multi-tenant/shared-interfaces/{name}/invoke
+     * body: 请求参数 Map
+     */
+    public Response invokeSharedInterface(Request request) {
+        String interfaceName = request.routeParam("name");
+        if (interfaceName == null || interfaceName.isEmpty()) {
+            return ResponseBuilder.error(400, "缺少路由参数: name");
+        }
+
+        Map<String, Object> args = request.all();
+        try {
+            Map<String, Object> result = jarPluginManager.invokeSharedInterface(interfaceName, args);
+            return ResponseBuilder.json(result);
+        } catch (IllegalStateException e) {
+            return ResponseBuilder.error(400, e.getMessage());
+        }
+    }
+
+    /**
+     * 列出所有已注册的共享接口。
+     * <p>
+     * GET /api/multi-tenant/shared-interfaces
+     */
+    public Response listSharedInterfaces(Request request) {
+        List<SharedInterfaceDescriptor> interfaces = jarPluginManager.getSharedInterfaces();
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (SharedInterfaceDescriptor desc : interfaces) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("interfaceName", desc.getInterfaceName());
+            map.put("pluginId", desc.getPluginId());
+            map.put("beanName", desc.getBeanName());
+            map.put("methodName", desc.getMethodName());
+            map.put("description", desc.getDescription());
+            list.add(map);
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("sharedInterfaces", list);
+        result.put("total", list.size());
         return ResponseBuilder.json(result);
     }
 }

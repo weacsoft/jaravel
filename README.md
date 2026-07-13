@@ -1,4 +1,4 @@
-# jaravel v0.1.0
+# jaravel v0.1.2
 
 多租户 Jar/Java 热更新在线运行平台。基于 jaravel-vendor 框架，提供 Java 源码在线编译执行、Jar 插件热加载、多租户隔离、P2SP 远程执行等能力，配以双 Guard 认证和树形 RBAC 权限控制。
 
@@ -7,12 +7,13 @@
 - **Java 在线编译**：使用 javax.tools.JavaCompiler 实时编译 Java 源码，反射调用 run() 或 main() 方法返回结果
 - **Jar 插件热加载**：URLClassLoader 动态加载 Jar 插件，支持启用/禁用、路由注册、Bean 注入、自动恢复
 - **多租户隔离**：同一 JAR 插件按租户隔离加载，Bean 名称和路由路径自动按租户前缀化
+- **共享接口**：全手动指定共享接口（字符串驱动 + 反射封装 + Map 传参），开发时无需包含目标类
 - **P2SP 远程执行**：树形拓扑远程执行，主节点分发任务到子节点，支持 relay 转发和三重防环检测
 - **双 Guard 认证**：admin guard（管理员）+ api guard（用户），均为 JWT 驱动
 - **树形 RBAC 权限**：Admin 和 User 各自独立的权限树，父节点授权等同于旗下所有子节点授权
 - **Java 文件插件热重载**：监听 .java 文件变化自动重载，无需重启应用
 - **Eloquent 合并 Model**：单一类同时承担实体定义与查询能力，对齐 Laravel Eloquent
-- **Laravel 风格目录结构**：config/、routes/、database/ 与 app/ 同级
+- **Laravel 风格目录结构**：config/App.java 显式控制功能启用，config/view/、config/wire/、config/database/ 分类管理
 - **Artisan CLI**：Laravel 风格命令行工具，支持 db:seed 种子数据初始化
 
 ## 目录结构
@@ -21,9 +22,15 @@
 jaravel/
 ├── src/main/java/com/weacsoft/jaravel/
 │   ├── JaravelApplication.java              # 应用入口
-│   ├── config/                              # 配置
-│   │   ├── App.java                         # 引导配置
-│   │   └── Database.java                    # 数据库配置（单数据源）
+│   ├── config/                              # 配置（类似 Laravel config/）
+│   │   ├── App.java                         # 中央配置，通过 @Import 显式控制功能启用
+│   │   ├── StaticResourceConfig.java        # 静态资源配置
+│   │   ├── view/
+│   │   │   └── ViewConfig.java              # 视图引擎配置（BladeEngine）
+│   │   ├── wire/
+│   │   │   └── WireConfig.java              # Wire 模块配置（手动注入控制）
+│   │   └── database/
+│   │       └── DatabaseConfig.java          # 数据库配置（GaarasonDataSource + Druid）
 │   ├── routes/                              # 路由
 │   │   ├── Api.java                         # API 路由（公开 + Admin + User 三组）
 │   │   └── Web.java                         # Web 路由（首页重定向）
@@ -46,6 +53,7 @@ jaravel/
 │       ├── service/
 │       │   ├── UserService.java             # 用户登录/注册
 │       │   ├── PluginRunService.java        # Java 编译执行 + Jar 反射调用
+│       │   ├── CaptchaService.java          # 验证码服务
 │       │   ├── AdminRolePermissionService.java  # Admin RBAC 服务
 │       │   └── UserRolePermissionService.java   # User RBAC 服务
 │       ├── http/
@@ -53,8 +61,10 @@ jaravel/
 │       │   │   ├── AuthController.java      # 双 Guard 认证（admin + user）
 │       │   │   ├── PluginController.java     # 插件管理（Jar + Java）
 │       │   │   ├── PluginRunController.java  # 插件执行（runJava + runJar）
-│       │   │   ├── TenantController.java     # 多租户管理
+│       │   │   ├── TenantController.java     # 多租户管理 + 共享接口
 │       │   │   ├── RemoteController.java     # 远程执行管理
+│       │   │   ├── CaptchaController.java    # 验证码演示
+│       │   │   ├── WireDemoController.java   # Wire 部分更新演示
 │       │   │   ├── AdminRbacController.java  # Admin RBAC 端点
 │       │   │   ├── UserRbacController.java   # User RBAC 端点
 │       │   │   └── UserController.java       # 用户列表

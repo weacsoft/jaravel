@@ -1,4 +1,4 @@
-package com.weacsoft.jaravel.config;
+package com.weacsoft.jaravel.config.view;
 
 import com.weacsoft.jaravel.vendor.cache.CacheManager;
 import com.weacsoft.jaravel.vendor.cache.CacheStore;
@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Configuration;
  * 避免每次渲染都重新编译。cache 模块未引入时自动回退到内存缓存。
  */
 @Configuration
-public class View {
+public class ViewConfig {
 
     @Bean
     public BladeEngine bladeEngine(ObjectProvider<CacheManager> cacheManagerProvider) {
