@@ -15,6 +15,7 @@
 - **Eloquent 合并 Model**：单一类同时承担实体定义与查询能力，对齐 Laravel Eloquent
 - **Laravel 风格目录结构**：config/App.java 显式控制功能启用，config/view/、config/wire/、config/database/ 分类管理
 - **Artisan CLI**：Laravel 风格命令行工具，支持 db:seed 种子数据初始化
+- **视图预编译**：支持运行时编译(需JDK)和预编译模式(仅需JRE)，通过 `jaravel.view.precompiled-mode` 切换
 
 ## 目录结构
 
@@ -26,7 +27,7 @@ jaravel/
 │   │   ├── App.java                         # 中央配置，通过 @Import 显式控制功能启用
 │   │   ├── StaticResourceConfig.java        # 静态资源配置
 │   │   ├── view/
-│   │   │   └── ViewConfig.java              # 视图引擎配置（BladeEngine）
+│   │   │   └── ViewConfig.java              # 视图引擎配置（BladeEngine，支持预编译模式）
 │   │   ├── wire/
 │   │   │   └── WireConfig.java              # Wire 模块配置（手动注入控制）
 │   │   └── database/
