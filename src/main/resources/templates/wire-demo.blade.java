@@ -104,6 +104,56 @@
                 </button>
             </div>
         </div>
+
+        {{-- Wire 事件系统演示 --}}
+        <div class="mdui-card" style="margin-top: 16px;">
+            <div class="mdui-card-header">
+                <div class="mdui-card-header-title">Wire 事件系统（beforeUpdate / afterUpdate）</div>
+            </div>
+            <div class="mdui-card-content">
+                <p class="hint">
+                    Wire.on() 允许在 DOM 更新前后执行自定义逻辑。<br>
+                    对于 mdui 等前端框架，<code>afterUpdate</code> 事件中调用 <code>mdui.mutation()</code> 可重新初始化动态插入的组件。
+                </p>
+                <div class="mdui-chip" id="wire-event-log" style="display: flex; flex-wrap: wrap; gap: 4px; min-height: 36px; align-items: center;">
+                    <span style="color: #999; font-size: 13px;">事件日志将显示在这里...</span>
+                </div>
+                <script>
+                (function() {
+                    var logEl = document.getElementById('wire-event-log');
+                    var eventCount = 0;
+
+                    function logEvent(text, color) {
+                        eventCount++;
+                        if (eventCount === 1) logEl.innerHTML = '';
+                        var chip = document.createElement('span');
+                        chip.className = 'mdui-chip-title';
+                        chip.style.cssText = 'font-size:12px; padding:2px 8px; border-radius:10px; background:' + (color || '#e3f2fd') + '; color:#333;';
+                        chip.textContent = '[' + new Date().toLocaleTimeString() + '] ' + text;
+                        logEl.appendChild(chip);
+                        // 只保留最近 5 条
+                        while (logEl.children.length > 5) {
+                            logEl.removeChild(logEl.firstChild);
+                        }
+                    }
+
+                    // 更新前事件
+                    Wire.on('beforeUpdate', function(component, action, params) {
+                        logEvent('beforeUpdate: ' + action, '#fff3e0');
+                    });
+
+                    // 更新后事件 — mdui 组件刷新
+                    Wire.on('afterUpdate', function(component, data, sections) {
+                        logEvent('afterUpdate: DOM 已更新', '#e8f5e9');
+                        // mdui 框架需要重新扫描 DOM 中动态插入的组件
+                        if (typeof mdui !== 'undefined' && mdui.mutation) {
+                            mdui.mutation();
+                        }
+                    });
+                })();
+                </script>
+            </div>
+        </div>
     </div>
 </div>
 @endsection

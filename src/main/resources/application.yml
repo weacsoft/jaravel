@@ -7,6 +7,15 @@ spring:
     driver-class-name: org.sqlite.JDBC
 
 jaravel:
+  # 视图引擎配置（jblade Blade 模板引擎）
+  view:
+    # 运行时编译模式（默认，需要 JDK）
+    # 预编译模式（仅需 JRE，开发时用 BladePrecompilerMain 预编译模板）
+    precompiled-mode: false
+    # precompiled-package: precompiled/templates.jblade.zip  # 预编译打包文件路径
+    # precompiled-classes-dir: precompiled/classes            # 预编译 class 目录路径
+    template-dir: templates
+    suffix: .blade.java
   # Wire 部分更新模块（Laravel Livewire 风格）
   wire:
     auto-inject-js: true
