@@ -8,13 +8,12 @@ import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.http.middleware.Middleware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 /**
  * 用户路由权限中间件：在中间件层判断「当前用户有没有访问这个功能的权限」。
  * <p>
- * 标注 {@code @Component} 后由 Spring 容器管理为单例，路由注册时通过
- * {@code context.getBean(UserRoutePermissionMiddleware.class)} 获取，无需每次 {@code new}。
+ * 由 {@link PermissionMiddleware} 在构造器中 {@code new} 创建，非 Spring Bean，
+ * 不需要 {@code @Component} 或 {@code @MiddlewareAlias}。
  * <p>
  * 与 {@link RoutePermissionMiddleware}（Admin 版）对称，面向普通用户。
  * 用于多租户场景下的 Java/Jar 插件运行权限控制。
@@ -27,23 +26,15 @@ import org.springframework.stereotype.Component;
  *   <li>有权放行，无权返回 403。</li>
  * </ol>
  *
- * <h3>使用方式（Spring Bean 模式，推荐）</h3>
+ * <h3>使用方式</h3>
  * <pre>
- * // 中间件已标注 @Component，从容器获取即可，无需 new
- * UserRoutePermissionMiddleware rbacMiddleware = context.getBean(UserRoutePermissionMiddleware.class);
- * Authenticate authMiddleware = context.getBean(Authenticate.class);
- *
- * router.group(Map.of(Route.Group.PREFIX, "plugin"), plugin -> {
- *     plugin.middleware(authMiddleware, rbacMiddleware);
- *     plugin.get("/java/run", controller::runJava);
- *     plugin.get("/jar/run", controller::runJar);
- * });
+ * // 由 PermissionMiddleware 内部创建，路由中通过 "permission:api" 别名引用：
+ * router.group(Map.of(), user -> { ... }).middleware("permission:api");
  * </pre>
  *
  * @see UserRolePermissionService#userCanAccessRoute(Long, String)
  * @see RoutePermissionMiddleware Admin 版路由权限中间件
  */
-@Component
 public class UserRoutePermissionMiddleware implements Middleware {
 
     private static final Logger log = LoggerFactory.getLogger(UserRoutePermissionMiddleware.class);

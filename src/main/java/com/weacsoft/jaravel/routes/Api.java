@@ -1,18 +1,7 @@
 package com.weacsoft.jaravel.routes;
 
-import com.weacsoft.jaravel.app.http.controller.AuthController;
-import com.weacsoft.jaravel.app.http.controller.CaptchaController;
-import com.weacsoft.jaravel.app.http.controller.AdminRbacController;
-import com.weacsoft.jaravel.app.http.controller.PageController;
-import com.weacsoft.jaravel.app.http.controller.PluginController;
-import com.weacsoft.jaravel.app.http.controller.PluginRunController;
-import com.weacsoft.jaravel.app.http.controller.TenantController;
-import com.weacsoft.jaravel.app.http.controller.RemoteController;
-import com.weacsoft.jaravel.app.http.controller.UserController;
-import com.weacsoft.jaravel.app.http.controller.UserRbacController;
 import com.weacsoft.jaravel.vendor.route.Route;
 import com.weacsoft.jaravel.vendor.route.Router;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -27,197 +16,187 @@ import java.util.Map;
  *   <li>User 路由：用户 RBAC + 插件执行，使用 api guard + 权限中间件</li>
  * </ul>
  * <p>
- * 中间件通过字符串别名引用（对齐 Laravel {@code Route::middleware('auth:api')}）：
+ * <b>控制器引用</b>：通过字符串 {@code "ControllerName::method"} 引用控制器方法
+ * （对齐 Laravel {@code Route::get('/users', 'UserController@index')}），无需 {@code getBean} 获取控制器实例。
+ * 控制器由 SpringBoot 自动扫描注册到 {@code ControllerRegistry}，路由在首次请求时延迟解析。
+ * <p>
+ * <b>中间件引用</b>：通过字符串别名引用（对齐 Laravel {@code Route::middleware('auth:api')}）：
  * <ul>
  *   <li>{@code "auth:<guard>"} — 由 {@code AuthMiddleware} 处理，使用对应守卫进行认证</li>
  *   <li>{@code "permission:<guard>"} — 由 {@code PermissionMiddleware} 处理，
  *       admin 守卫走管理员 RBAC，其它守卫走用户 RBAC</li>
  * </ul>
- * 中间件标注 {@code @MiddlewareAlias} 后由 SpringBoot 自动扫描注册，无需手动 new 中间件实例。
+ * 中间件标注 {@code @MiddlewareAlias} 后由 SpringBoot classpath 扫描自动注册（非 Spring Bean），无需手动 new。
  */
 @Component
 public class Api {
 
-    public void register(Router router, ApplicationContext context) {
-        AuthController authController = context.getBean(AuthController.class);
-        CaptchaController captchaController = context.getBean(CaptchaController.class);
-        UserController userController = context.getBean(UserController.class);
-        AdminRbacController rbacController = context.getBean(AdminRbacController.class);
-        UserRbacController userRbac = context.getBean(UserRbacController.class);
-        PluginController pluginController = context.getBean(PluginController.class);
-        PluginRunController pluginRun = context.getBean(PluginRunController.class);
-        TenantController tenantController = context.getBean(TenantController.class);
-        RemoteController remoteController = context.getBean(RemoteController.class);
-        PageController pageController = context.getBean(PageController.class);
-
-        // 中间件通过字符串别名引用（对齐 Laravel Route::middleware('auth:api')），
-        // 中间件（AuthMiddleware / PermissionMiddleware）标注
-        // @MiddlewareAlias 后由 SpringBoot 自动扫描注册，无需在此手动 new 中间件实例：
-        //   "auth:admin"     -> 认证中间件，使用 admin 守卫
-        //   "permission:admin" -> 管理员 RBAC 权限中间件（PermissionMiddleware 委托 RoutePermissionMiddleware）
-        //   "auth:api"       -> 认证中间件，使用 api 守卫
-        //   "permission:api" -> 用户 RBAC 权限中间件（PermissionMiddleware 委托 UserRoutePermissionMiddleware）
+    public void register(Router router) {
+        // 控制器通过字符串引用（对齐 Laravel Route::get('/users', 'UserController@index')），
+        // 无需 context.getBean() 获取控制器实例：
+        //   "AuthController::adminLogin" -> 从 ControllerRegistry 查找 AuthController，反射调用 adminLogin(Request)
+        // 控制器由 SpringBoot 自动扫描注册，路由在首次请求时延迟解析。
 
         // ===== 页面路由（jblade 模板渲染，无需认证） =====
-        router.get("/", pageController::index);
-        router.get("/admin", pageController::admin);
-        router.get("/user", pageController::user);
+        router.get("/", "PageController::index");
+        router.get("/admin", "PageController::admin");
+        router.get("/user", "PageController::user");
 
         router.group(Map.of(Route.Group.PREFIX, "api"), api -> {
             // ===== 验证码接口（无需认证） =====
-            api.get("/captcha/generate", captchaController::generate);
-            api.post("/captcha/generate", captchaController::generate);
-            api.post("/captcha/verify", captchaController::verify);
+            api.get("/captcha/generate", "CaptchaController::generate");
+            api.post("/captcha/generate", "CaptchaController::generate");
+            api.post("/captcha/verify", "CaptchaController::verify");
 
             // ===== 公开路由（无需认证） =====
-            api.post("/auth/admin/login", authController::adminLogin);
-            api.post("/auth/user/register", authController::register);
-            api.post("/auth/user/login", authController::userLogin);
-            api.post("/auth/refresh", authController::refresh);
-            api.get("/plugin/overview", pluginRun::overview);
+            api.post("/auth/admin/login", "AuthController::adminLogin");
+            api.post("/auth/user/register", "AuthController::register");
+            api.post("/auth/user/login", "AuthController::userLogin");
+            api.post("/auth/refresh", "AuthController::refresh");
+            api.get("/plugin/overview", "PluginRunController::overview");
 
             // ===== Admin 路由（admin guard + admin 路由权限中间件） =====
             api.group(Map.of(), admin -> {
-                admin.post("/auth/admin/logout", authController::adminLogout);
-                admin.get("/auth/admin/me", authController::adminMe);
+                admin.post("/auth/admin/logout", "AuthController::adminLogout");
+                admin.get("/auth/admin/me", "AuthController::adminMe");
 
                 // Admin RBAC 管理端点
                 // 管理员 CRUD
-                admin.get("/rbac/admins", rbacController::listAdmins);
-                admin.post("/rbac/admins", rbacController::createAdmin);
-                admin.get("/rbac/admins/{id}", rbacController::showAdmin);
-                admin.put("/rbac/admins/{id}", rbacController::updateAdmin);
-                admin.delete("/rbac/admins/{id}", rbacController::deleteAdmin);
+                admin.get("/rbac/admins", "AdminRbacController::listAdmins");
+                admin.post("/rbac/admins", "AdminRbacController::createAdmin");
+                admin.get("/rbac/admins/{id}", "AdminRbacController::showAdmin");
+                admin.put("/rbac/admins/{id}", "AdminRbacController::updateAdmin");
+                admin.delete("/rbac/admins/{id}", "AdminRbacController::deleteAdmin");
 
                 // 角色 CRUD
-                admin.get("/rbac/roles", rbacController::listRoles);
-                admin.post("/rbac/roles", rbacController::createRole);
-                admin.get("/rbac/roles/{id}", rbacController::showRole);
-                admin.put("/rbac/roles/{id}", rbacController::updateRole);
-                admin.delete("/rbac/roles/{id}", rbacController::deleteRole);
+                admin.get("/rbac/roles", "AdminRbacController::listRoles");
+                admin.post("/rbac/roles", "AdminRbacController::createRole");
+                admin.get("/rbac/roles/{id}", "AdminRbacController::showRole");
+                admin.put("/rbac/roles/{id}", "AdminRbacController::updateRole");
+                admin.delete("/rbac/roles/{id}", "AdminRbacController::deleteRole");
 
                 // 权限 CRUD
-                admin.get("/rbac/permissions", rbacController::listPermissions);
-                admin.post("/rbac/permissions", rbacController::createPermission);
-                admin.get("/rbac/permissions/{id}", rbacController::showPermission);
-                admin.put("/rbac/permissions/{id}", rbacController::updatePermission);
-                admin.delete("/rbac/permissions/{id}", rbacController::deletePermission);
+                admin.get("/rbac/permissions", "AdminRbacController::listPermissions");
+                admin.post("/rbac/permissions", "AdminRbacController::createPermission");
+                admin.get("/rbac/permissions/{id}", "AdminRbacController::showPermission");
+                admin.put("/rbac/permissions/{id}", "AdminRbacController::updatePermission");
+                admin.delete("/rbac/permissions/{id}", "AdminRbacController::deletePermission");
 
                 // 管理员 ↔ 角色
-                admin.get("/rbac/admins/{id}/roles", rbacController::adminRolesAll);
-                admin.get("/rbac/admins/{id}/roles/assigned", rbacController::adminRolesAssigned);
-                admin.post("/rbac/admins/{id}/roles", rbacController::assignRole);
-                admin.delete("/rbac/admins/{id}/roles/{roleId}", rbacController::removeRole);
+                admin.get("/rbac/admins/{id}/roles", "AdminRbacController::adminRolesAll");
+                admin.get("/rbac/admins/{id}/roles/assigned", "AdminRbacController::adminRolesAssigned");
+                admin.post("/rbac/admins/{id}/roles", "AdminRbacController::assignRole");
+                admin.delete("/rbac/admins/{id}/roles/{roleId}", "AdminRbacController::removeRole");
 
                 // 角色 ↔ 权限
-                admin.get("/rbac/roles/{id}/permissions", rbacController::rolePermissionsAll);
-                admin.get("/rbac/roles/{id}/permissions/assigned", rbacController::rolePermissionsAssigned);
-                admin.post("/rbac/roles/{id}/permissions", rbacController::assignPermission);
-                admin.delete("/rbac/roles/{id}/permissions/{permissionId}", rbacController::removePermission);
+                admin.get("/rbac/roles/{id}/permissions", "AdminRbacController::rolePermissionsAll");
+                admin.get("/rbac/roles/{id}/permissions/assigned", "AdminRbacController::rolePermissionsAssigned");
+                admin.post("/rbac/roles/{id}/permissions", "AdminRbacController::assignPermission");
+                admin.delete("/rbac/roles/{id}/permissions/{permissionId}", "AdminRbacController::removePermission");
 
                 // 管理员 ↔ 权限（树形祖先授权 + 溯源）
-                admin.get("/rbac/admins/{id}/permissions", rbacController::adminPermissionsAll);
-                admin.get("/rbac/admins/{id}/permissions/assigned", rbacController::adminPermissionsAssigned);
-                admin.get("/rbac/admins/{id}/check-permission/{permissionId}", rbacController::checkPermission);
-                admin.get("/rbac/admins/{id}/check-role/{roleId}", rbacController::checkRole);
-                admin.get("/rbac/admins/{id}/permissions/{permissionId}/grantors", rbacController::permissionGrantors);
+                admin.get("/rbac/admins/{id}/permissions", "AdminRbacController::adminPermissionsAll");
+                admin.get("/rbac/admins/{id}/permissions/assigned", "AdminRbacController::adminPermissionsAssigned");
+                admin.get("/rbac/admins/{id}/check-permission/{permissionId}", "AdminRbacController::checkPermission");
+                admin.get("/rbac/admins/{id}/check-role/{roleId}", "AdminRbacController::checkRole");
+                admin.get("/rbac/admins/{id}/permissions/{permissionId}/grantors", "AdminRbacController::permissionGrantors");
 
                 // 用户管理（Admin 管理平台用户）
-                admin.get("/user-rbac/users", userRbac::listUsers);
-                admin.post("/user-rbac/users", userRbac::createUser);
-                admin.get("/user-rbac/users/{id}", userRbac::showUser);
-                admin.put("/user-rbac/users/{id}", userRbac::updateUser);
-                admin.delete("/user-rbac/users/{id}", userRbac::deleteUser);
+                admin.get("/user-rbac/users", "UserRbacController::listUsers");
+                admin.post("/user-rbac/users", "UserRbacController::createUser");
+                admin.get("/user-rbac/users/{id}", "UserRbacController::showUser");
+                admin.put("/user-rbac/users/{id}", "UserRbacController::updateUser");
+                admin.delete("/user-rbac/users/{id}", "UserRbacController::deleteUser");
 
                 // 用户角色 CRUD
-                admin.get("/user-rbac/roles", userRbac::listRoles);
-                admin.post("/user-rbac/roles", userRbac::createRole);
-                admin.get("/user-rbac/roles/{id}", userRbac::showRole);
-                admin.put("/user-rbac/roles/{id}", userRbac::updateRole);
-                admin.delete("/user-rbac/roles/{id}", userRbac::deleteRole);
+                admin.get("/user-rbac/roles", "UserRbacController::listRoles");
+                admin.post("/user-rbac/roles", "UserRbacController::createRole");
+                admin.get("/user-rbac/roles/{id}", "UserRbacController::showRole");
+                admin.put("/user-rbac/roles/{id}", "UserRbacController::updateRole");
+                admin.delete("/user-rbac/roles/{id}", "UserRbacController::deleteRole");
 
                 // 用户权限 CRUD
-                admin.get("/user-rbac/permissions", userRbac::listPermissions);
-                admin.post("/user-rbac/permissions", userRbac::createPermission);
-                admin.get("/user-rbac/permissions/{id}", userRbac::showPermission);
-                admin.put("/user-rbac/permissions/{id}", userRbac::updatePermission);
-                admin.delete("/user-rbac/permissions/{id}", userRbac::deletePermission);
+                admin.get("/user-rbac/permissions", "UserRbacController::listPermissions");
+                admin.post("/user-rbac/permissions", "UserRbacController::createPermission");
+                admin.get("/user-rbac/permissions/{id}", "UserRbacController::showPermission");
+                admin.put("/user-rbac/permissions/{id}", "UserRbacController::updatePermission");
+                admin.delete("/user-rbac/permissions/{id}", "UserRbacController::deletePermission");
 
                 // 用户 ↔ 角色
-                admin.get("/user-rbac/users/{id}/roles", userRbac::userRolesAll);
-                admin.get("/user-rbac/users/{id}/roles/assigned", userRbac::userRolesAssigned);
-                admin.post("/user-rbac/users/{id}/roles", userRbac::assignRole);
-                admin.delete("/user-rbac/users/{id}/roles/{roleId}", userRbac::removeRole);
+                admin.get("/user-rbac/users/{id}/roles", "UserRbacController::userRolesAll");
+                admin.get("/user-rbac/users/{id}/roles/assigned", "UserRbacController::userRolesAssigned");
+                admin.post("/user-rbac/users/{id}/roles", "UserRbacController::assignRole");
+                admin.delete("/user-rbac/users/{id}/roles/{roleId}", "UserRbacController::removeRole");
 
                 // 角色 ↔ 权限
-                admin.get("/user-rbac/roles/{id}/permissions", userRbac::rolePermissionsAll);
-                admin.get("/user-rbac/roles/{id}/permissions/assigned", userRbac::rolePermissionsAssigned);
-                admin.post("/user-rbac/roles/{id}/permissions", userRbac::assignPermission);
-                admin.delete("/user-rbac/roles/{id}/permissions/{permissionId}", userRbac::removePermission);
+                admin.get("/user-rbac/roles/{id}/permissions", "UserRbacController::rolePermissionsAll");
+                admin.get("/user-rbac/roles/{id}/permissions/assigned", "UserRbacController::rolePermissionsAssigned");
+                admin.post("/user-rbac/roles/{id}/permissions", "UserRbacController::assignPermission");
+                admin.delete("/user-rbac/roles/{id}/permissions/{permissionId}", "UserRbacController::removePermission");
 
                 // 用户 ↔ 权限（树形 + 路由 + 溯源）
-                admin.get("/user-rbac/users/{id}/permissions", userRbac::userPermissionsAll);
-                admin.get("/user-rbac/users/{id}/permissions/assigned", userRbac::userPermissionsAssigned);
-                admin.get("/user-rbac/users/{id}/check-permission/{permissionId}", userRbac::checkPermission);
-                admin.get("/user-rbac/users/{id}/check-role/{roleId}", userRbac::checkRole);
-                admin.get("/user-rbac/users/{id}/check-route", userRbac::checkRoute);
-                admin.get("/user-rbac/users/{id}/accessible-routes", userRbac::accessibleRoutes);
-                admin.get("/user-rbac/users/{id}/permissions/{permissionId}/grantors", userRbac::permissionGrantors);
+                admin.get("/user-rbac/users/{id}/permissions", "UserRbacController::userPermissionsAll");
+                admin.get("/user-rbac/users/{id}/permissions/assigned", "UserRbacController::userPermissionsAssigned");
+                admin.get("/user-rbac/users/{id}/check-permission/{permissionId}", "UserRbacController::checkPermission");
+                admin.get("/user-rbac/users/{id}/check-role/{roleId}", "UserRbacController::checkRole");
+                admin.get("/user-rbac/users/{id}/check-route", "UserRbacController::checkRoute");
+                admin.get("/user-rbac/users/{id}/accessible-routes", "UserRbacController::accessibleRoutes");
+                admin.get("/user-rbac/users/{id}/permissions/{permissionId}/grantors", "UserRbacController::permissionGrantors");
 
                 // Jar 插件管理
-                admin.get("/plugins/jar", pluginController::listJarPlugins);
-                admin.post("/plugins/jar/upload", pluginController::uploadJarPlugin);
-                admin.post("/plugins/jar/{pluginId}/enable", pluginController::enableJarPlugin);
-                admin.post("/plugins/jar/{pluginId}/disable", pluginController::disableJarPlugin);
-                admin.post("/plugins/jar/{pluginId}/routes", pluginController::registerRoute);
-                admin.delete("/plugins/jar/{pluginId}/routes", pluginController::unregisterRoute);
-                admin.get("/plugins/jar/{pluginId}/available-routes", pluginController::listAvailableJarRoutes);
-                admin.post("/plugins/jar/{pluginId}/available-routes/register", pluginController::registerAvailableJarRoute);
+                admin.get("/plugins/jar", "PluginController::listJarPlugins");
+                admin.post("/plugins/jar/upload", "PluginController::uploadJarPlugin");
+                admin.post("/plugins/jar/{pluginId}/enable", "PluginController::enableJarPlugin");
+                admin.post("/plugins/jar/{pluginId}/disable", "PluginController::disableJarPlugin");
+                admin.post("/plugins/jar/{pluginId}/routes", "PluginController::registerRoute");
+                admin.delete("/plugins/jar/{pluginId}/routes", "PluginController::unregisterRoute");
+                admin.get("/plugins/jar/{pluginId}/available-routes", "PluginController::listAvailableJarRoutes");
+                admin.post("/plugins/jar/{pluginId}/available-routes/register", "PluginController::registerAvailableJarRoute");
 
                 // Java 文件插件管理
-                admin.get("/plugins/java", pluginController::listJavaPlugins);
-                admin.post("/plugins/java/register", pluginController::registerJavaPlugin);
-                admin.post("/plugins/java/{pluginId}/reload", pluginController::reloadJavaPlugin);
-                admin.post("/plugins/java/reload-all", pluginController::reloadAllChanged);
-                admin.post("/plugins/java/{pluginId}/disable", pluginController::disableJavaPlugin);
-                admin.get("/plugins/java/{pluginId}/available-routes", pluginController::listAvailableJavaRoutes);
-                admin.post("/plugins/java/{pluginId}/available-routes/register", pluginController::registerAvailableJavaRoute);
+                admin.get("/plugins/java", "PluginController::listJavaPlugins");
+                admin.post("/plugins/java/register", "PluginController::registerJavaPlugin");
+                admin.post("/plugins/java/{pluginId}/reload", "PluginController::reloadJavaPlugin");
+                admin.post("/plugins/java/reload-all", "PluginController::reloadAllChanged");
+                admin.post("/plugins/java/{pluginId}/disable", "PluginController::disableJavaPlugin");
+                admin.get("/plugins/java/{pluginId}/available-routes", "PluginController::listAvailableJavaRoutes");
+                admin.post("/plugins/java/{pluginId}/available-routes/register", "PluginController::registerAvailableJavaRoute");
 
                 // 多租户插件管理
-                admin.get("/multi-tenant/status", tenantController::status);
-                admin.get("/multi-tenant/naming-demo", tenantController::namingDemo);
-                admin.get("/multi-tenant/tenants/{tenantId}/plugins", tenantController::listByTenant);
-                admin.post("/multi-tenant/tenants/{tenantId}/plugins", tenantController::registerForTenant);
-                admin.post("/multi-tenant/tenants/{tenantId}/upload", tenantController::uploadAndRegister);
-                admin.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/enable", tenantController::enableForTenant);
-                admin.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/disable", tenantController::disableForTenant);
+                admin.get("/multi-tenant/status", "TenantController::status");
+                admin.get("/multi-tenant/naming-demo", "TenantController::namingDemo");
+                admin.get("/multi-tenant/tenants/{tenantId}/plugins", "TenantController::listByTenant");
+                admin.post("/multi-tenant/tenants/{tenantId}/plugins", "TenantController::registerForTenant");
+                admin.post("/multi-tenant/tenants/{tenantId}/upload", "TenantController::uploadAndRegister");
+                admin.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/enable", "TenantController::enableForTenant");
+                admin.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/disable", "TenantController::disableForTenant");
 
                 // 共享接口管理（全手动指定，反射调用）
-                admin.post("/multi-tenant/shared-interfaces/register", tenantController::registerSharedInterface);
-                admin.post("/multi-tenant/shared-interfaces/{name}/invoke", tenantController::invokeSharedInterface);
-                admin.get("/multi-tenant/shared-interfaces", tenantController::listSharedInterfaces);
+                admin.post("/multi-tenant/shared-interfaces/register", "TenantController::registerSharedInterface");
+                admin.post("/multi-tenant/shared-interfaces/{name}/invoke", "TenantController::invokeSharedInterface");
+                admin.get("/multi-tenant/shared-interfaces", "TenantController::listSharedInterfaces");
 
                 // 远程插件执行管理
-                admin.get("/remote/status", remoteController::status);
-                admin.get("/remote/sub-servers", remoteController::listSubServers);
-                admin.post("/remote/sub-servers", remoteController::registerSubServer);
-                admin.delete("/remote/sub-servers/{subServerId}", remoteController::unregisterSubServer);
-                admin.post("/remote/sub-servers/{subServerId}/connect", remoteController::connectSubServer);
-                admin.post("/remote/sub-servers/{subServerId}/disconnect", remoteController::disconnectSubServer);
+                admin.get("/remote/status", "RemoteController::status");
+                admin.get("/remote/sub-servers", "RemoteController::listSubServers");
+                admin.post("/remote/sub-servers", "RemoteController::registerSubServer");
+                admin.delete("/remote/sub-servers/{subServerId}", "RemoteController::unregisterSubServer");
+                admin.post("/remote/sub-servers/{subServerId}/connect", "RemoteController::connectSubServer");
+                admin.post("/remote/sub-servers/{subServerId}/disconnect", "RemoteController::disconnectSubServer");
             }).middleware("auth:admin", "permission:admin");
 
             // ===== User 路由（api guard + user 路由权限中间件） =====
             api.group(Map.of(), user -> {
-                user.post("/auth/user/logout", authController::logout);
-                user.get("/auth/user/me", authController::me);
-                user.get("/users", userController::list);
-                user.get("/users/{id}", userController::show);
+                user.post("/auth/user/logout", "AuthController::logout");
+                user.get("/auth/user/me", "AuthController::me");
+                user.get("/users", "UserController::list");
+                user.get("/users/{id}", "UserController::show");
 
                 // 插件执行端点
-                user.post("/plugin/java/run", pluginRun::runJava);
-                user.get("/plugin/java/status", pluginRun::javaStatus);
-                user.post("/plugin/jar/run", pluginRun::runJar);
-                user.get("/plugin/jar/status", pluginRun::jarStatus);
+                user.post("/plugin/java/run", "PluginRunController::runJava");
+                user.get("/plugin/java/status", "PluginRunController::javaStatus");
+                user.post("/plugin/jar/run", "PluginRunController::runJar");
+                user.get("/plugin/jar/status", "PluginRunController::jarStatus");
             }).middleware("auth:api", "permission:api");
         });
     }
