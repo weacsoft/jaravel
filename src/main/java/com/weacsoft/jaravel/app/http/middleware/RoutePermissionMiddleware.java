@@ -84,18 +84,20 @@ public class RoutePermissionMiddleware implements Middleware {
     }
 
     @Override
-    public Response handle(Request request, NextFunction next) {
+    public Response handle(Request request, NextFunction next, String... params) {
+        // 优先使用 params 中的守卫（来自别名表达式如 permission:admin），其次使用构造器指定的守卫
+        String effectiveGuard = (params != null && params.length > 0) ? params[0] : this.guard;
         // 1. 检查登录状态
-        boolean authenticated = (guard != null && !guard.isEmpty())
-                ? Auth.guard(guard).check()
+        boolean authenticated = (effectiveGuard != null && !effectiveGuard.isEmpty())
+                ? Auth.guard(effectiveGuard).check()
                 : Auth.check();
         if (!authenticated) {
             return ResponseBuilder.error(401, "未登录");
         }
 
         // 2. 获取管理员 ID
-        Object idObj = (guard != null && !guard.isEmpty())
-                ? Auth.guard(guard).id()
+        Object idObj = (effectiveGuard != null && !effectiveGuard.isEmpty())
+                ? Auth.guard(effectiveGuard).id()
                 : Auth.id();
         Long adminId = toLong(idObj);
         if (adminId == null) {

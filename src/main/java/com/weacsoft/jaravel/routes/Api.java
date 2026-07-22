@@ -29,11 +29,11 @@ import java.util.Map;
  * <p>
  * 中间件通过字符串别名引用（对齐 Laravel {@code Route::middleware('auth:api')}）：
  * <ul>
- *   <li>{@code "auth:<guard>"} — 由 {@code AuthMiddlewareResolver} 解析，构造对应守卫的认证中间件</li>
- *   <li>{@code "permission:<guard>"} — 由 {@code PermissionMiddlewareResolver} 解析，
+ *   <li>{@code "auth:<guard>"} — 由 {@code AuthMiddleware} 处理，使用对应守卫进行认证</li>
+ *   <li>{@code "permission:<guard>"} — 由 {@code PermissionMiddleware} 处理，
  *       admin 守卫走管理员 RBAC，其它守卫走用户 RBAC</li>
  * </ul>
- * 别名解析器标注 {@code @MiddlewareAlias} 后由 SpringBoot 自动扫描注册，无需手动 new 中间件实例。
+ * 中间件标注 {@code @MiddlewareAlias} 后由 SpringBoot 自动扫描注册，无需手动 new 中间件实例。
  */
 @Component
 public class Api {
@@ -51,12 +51,12 @@ public class Api {
         PageController pageController = context.getBean(PageController.class);
 
         // 中间件通过字符串别名引用（对齐 Laravel Route::middleware('auth:api')），
-        // 别名解析器（AuthMiddlewareResolver / PermissionMiddlewareResolver）标注
+        // 中间件（AuthMiddleware / PermissionMiddleware）标注
         // @MiddlewareAlias 后由 SpringBoot 自动扫描注册，无需在此手动 new 中间件实例：
         //   "auth:admin"     -> 认证中间件，使用 admin 守卫
-        //   "permission:admin" -> 管理员 RBAC 权限中间件（RoutePermissionMiddleware）
+        //   "permission:admin" -> 管理员 RBAC 权限中间件（PermissionMiddleware 委托 RoutePermissionMiddleware）
         //   "auth:api"       -> 认证中间件，使用 api 守卫
-        //   "permission:api" -> 用户 RBAC 权限中间件（UserRoutePermissionMiddleware）
+        //   "permission:api" -> 用户 RBAC 权限中间件（PermissionMiddleware 委托 UserRoutePermissionMiddleware）
 
         // ===== 页面路由（jblade 模板渲染，无需认证） =====
         router.get("/", pageController::index);

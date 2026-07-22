@@ -6,7 +6,6 @@ import com.weacsoft.jaravel.vendor.http.middleware.TrimStrings;
 import com.weacsoft.jaravel.vendor.route.Router;
 import com.weacsoft.jaravel.routes.Api;
 import com.weacsoft.jaravel.routes.Web;
-import com.weacsoft.jaravel.vendor.springboot.GlobalMiddlewareRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -18,14 +17,14 @@ import org.springframework.context.annotation.Configuration;
  * 创建 {@code @Bean Router}，加载 API 路由（{@link Api}）与 Web 路由（{@link Web}），
  * 由 jaravel-springboot 自动装配转换为 Spring RouterFunction。
  * <p>
- * 在 {@link #boot()} 阶段统一注册系统全局中间件（对齐 Laravel Kernel $middleware），
- * 中间件以 Spring {@code @Component} 单例形式管理，无状态、可安全并发复用。
+ * 系统全局中间件（对齐 Laravel Kernel $middleware）直接在根 {@link Router} 上声明，
+ * 所有路由通过 {@code Router.getAllMiddlewares()} 继承，无需单独的全局中间件注册器。
  * <p>
  * 替代原 {@code app/config/RouteConfig.java}，将路由定义拆分到 {@code routes/} 目录，
  * 与 Laravel 的 {@code routes/api.php} + {@code routes/web.php} 结构对齐。
  * <p>
  * 路由级中间件通过 {@code @MiddlewareAlias} 别名引用（如 {@code "auth:admin"}、
- * {@code "permission:api"}），别名解析器由 SpringBoot 自动扫描注册，无需在此手动注册 Bean。
+ * {@code "permission:api"}），中间件由 SpringBoot 自动扫描注册，无需在此手动注册 Bean。
  */
 @Configuration
 public class RouteServiceProvider extends ServiceProvider {
@@ -33,34 +32,19 @@ public class RouteServiceProvider extends ServiceProvider {
     @Autowired
     private ApplicationContext context;
 
-    @Autowired
-    private GlobalMiddlewareRegistry globalMiddlewareRegistry;
-
     @Bean
     public Router configureRoutes() {
         Router baseRouter = new Router();
+        // 全局中间件（对齐 Laravel Kernel $middleware），直接在根 Router 上声明，
+        // 所有路由通过 Router.getAllMiddlewares() 继承
+        baseRouter.middleware(
+                context.getBean(TrimStrings.class),
+                context.getBean(ConvertEmptyStringsToNull.class)
+        );
         // 加载 API 路由
         context.getBean(Api.class).register(baseRouter, context);
         // 加载 Web 路由
         context.getBean(Web.class).register(baseRouter, context);
         return baseRouter;
-    }
-
-    /**
-     * 启动阶段：注册系统全局中间件。
-     * <p>
-     * 系统自带中间件（TrimStrings、ConvertEmptyStringsToNull）已标注 {@code @Component}，
-     * 由 Spring 容器管理为无状态单例。此处通过 {@link GlobalMiddlewareRegistry#addByType(Class)}
-     * 从容器中提取并注册到全局中间件栈，对齐 Laravel 在 RouteServiceProvider 统一注册中间件的做法。
-     * <p>
-     * 对于用户自定义的中间件，可使用 {@code @Component} 注册进 Spring，
-     * 在路由中通过 {@code context.getBean(XxxMiddleware.class)} 提取，或在此处统一注册为全局中间件。
-     * 对于路由级中间件，推荐使用 {@code @MiddlewareAlias} 别名机制，路由中直接用字符串别名引用。
-     */
-    @Override
-    public void boot() {
-        // 系统全局中间件（对齐 Laravel Kernel $middleware）
-        globalMiddlewareRegistry.addByType(TrimStrings.class);
-        globalMiddlewareRegistry.addByType(ConvertEmptyStringsToNull.class);
     }
 }

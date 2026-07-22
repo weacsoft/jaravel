@@ -59,16 +59,18 @@ public class UserRoutePermissionMiddleware implements Middleware {
     }
 
     @Override
-    public Response handle(Request request, NextFunction next) {
-        boolean authenticated = (guard != null && !guard.isEmpty())
-                ? Auth.guard(guard).check()
+    public Response handle(Request request, NextFunction next, String... params) {
+        // 优先使用 params 中的守卫（来自别名表达式如 permission:api），其次使用构造器指定的守卫
+        String effectiveGuard = (params != null && params.length > 0) ? params[0] : this.guard;
+        boolean authenticated = (effectiveGuard != null && !effectiveGuard.isEmpty())
+                ? Auth.guard(effectiveGuard).check()
                 : Auth.check();
         if (!authenticated) {
             return ResponseBuilder.error(401, "未登录");
         }
 
-        Object idObj = (guard != null && !guard.isEmpty())
-                ? Auth.guard(guard).id()
+        Object idObj = (effectiveGuard != null && !effectiveGuard.isEmpty())
+                ? Auth.guard(effectiveGuard).id()
                 : Auth.id();
         Long userId = toLong(idObj);
         if (userId == null) {
