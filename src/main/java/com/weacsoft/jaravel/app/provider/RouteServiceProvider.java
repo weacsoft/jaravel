@@ -1,7 +1,6 @@
 package com.weacsoft.jaravel.app.provider;
 
 import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
-import com.weacsoft.jaravel.vendor.auth.middleware.Authenticate;
 import com.weacsoft.jaravel.vendor.http.middleware.ConvertEmptyStringsToNull;
 import com.weacsoft.jaravel.vendor.http.middleware.TrimStrings;
 import com.weacsoft.jaravel.vendor.route.Router;
@@ -24,6 +23,9 @@ import org.springframework.context.annotation.Configuration;
  * <p>
  * 替代原 {@code app/config/RouteConfig.java}，将路由定义拆分到 {@code routes/} 目录，
  * 与 Laravel 的 {@code routes/api.php} + {@code routes/web.php} 结构对齐。
+ * <p>
+ * 路由级中间件通过 {@code @MiddlewareAlias} 别名引用（如 {@code "auth:admin"}、
+ * {@code "permission:api"}），别名解析器由 SpringBoot 自动扫描注册，无需在此手动注册 Bean。
  */
 @Configuration
 public class RouteServiceProvider extends ServiceProvider {
@@ -45,17 +47,6 @@ public class RouteServiceProvider extends ServiceProvider {
     }
 
     /**
-     * 注册认证中间件为 Spring Bean（vendor 框架的 Authenticate 未标注 @Component）。
-     * <p>
-     * 这样路由注册时可通过 {@code context.getBean(Authenticate.class)} 获取，
-     * 无需每次 {@code new Authenticate()}。
-     */
-    @Bean
-    public Authenticate authenticate() {
-        return new Authenticate();
-    }
-
-    /**
      * 启动阶段：注册系统全局中间件。
      * <p>
      * 系统自带中间件（TrimStrings、ConvertEmptyStringsToNull）已标注 {@code @Component}，
@@ -64,6 +55,7 @@ public class RouteServiceProvider extends ServiceProvider {
      * <p>
      * 对于用户自定义的中间件，可使用 {@code @Component} 注册进 Spring，
      * 在路由中通过 {@code context.getBean(XxxMiddleware.class)} 提取，或在此处统一注册为全局中间件。
+     * 对于路由级中间件，推荐使用 {@code @MiddlewareAlias} 别名机制，路由中直接用字符串别名引用。
      */
     @Override
     public void boot() {

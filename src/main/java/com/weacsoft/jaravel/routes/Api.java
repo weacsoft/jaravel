@@ -10,9 +10,6 @@ import com.weacsoft.jaravel.app.http.controller.TenantController;
 import com.weacsoft.jaravel.app.http.controller.RemoteController;
 import com.weacsoft.jaravel.app.http.controller.UserController;
 import com.weacsoft.jaravel.app.http.controller.UserRbacController;
-import com.weacsoft.jaravel.app.http.middleware.RoutePermissionMiddleware;
-import com.weacsoft.jaravel.app.http.middleware.UserRoutePermissionMiddleware;
-import com.weacsoft.jaravel.vendor.auth.middleware.Authenticate;
 import com.weacsoft.jaravel.vendor.route.Route;
 import com.weacsoft.jaravel.vendor.route.Router;
 import org.springframework.context.ApplicationContext;
@@ -26,9 +23,17 @@ import java.util.Map;
  * 路由分为三组：
  * <ul>
  *   <li>公开路由：管理员/用户登录、注册、token 刷新、插件系统总览</li>
- *   <li>Admin 路由：管理员 RBAC + 插件管理 + 多租户 + 远程执行，使用 admin guard + RoutePermissionMiddleware</li>
- *   <li>User 路由：用户 RBAC + 插件执行，使用 api guard + UserRoutePermissionMiddleware</li>
+ *   <li>Admin 路由：管理员 RBAC + 插件管理 + 多租户 + 远程执行，使用 admin guard + 权限中间件</li>
+ *   <li>User 路由：用户 RBAC + 插件执行，使用 api guard + 权限中间件</li>
  * </ul>
+ * <p>
+ * 中间件通过字符串别名引用（对齐 Laravel {@code Route::middleware('auth:api')}）：
+ * <ul>
+ *   <li>{@code "auth:<guard>"} — 由 {@code AuthMiddlewareResolver} 解析，构造对应守卫的认证中间件</li>
+ *   <li>{@code "permission:<guard>"} — 由 {@code PermissionMiddlewareResolver} 解析，
+ *       admin 守卫走管理员 RBAC，其它守卫走用户 RBAC</li>
+ * </ul>
+ * 别名解析器标注 {@code @MiddlewareAlias} 后由 SpringBoot 自动扫描注册，无需手动 new 中间件实例。
  */
 @Component
 public class Api {
@@ -45,9 +50,13 @@ public class Api {
         RemoteController remoteController = context.getBean(RemoteController.class);
         PageController pageController = context.getBean(PageController.class);
 
-        // 使用指定守卫名称创建中间件实例，确保 admin 路由用 admin guard，user 路由用 api guard
-        RoutePermissionMiddleware adminRbacMiddleware = new RoutePermissionMiddleware("admin");
-        UserRoutePermissionMiddleware userRbacMiddleware = new UserRoutePermissionMiddleware("api");
+        // 中间件通过字符串别名引用（对齐 Laravel Route::middleware('auth:api')），
+        // 别名解析器（AuthMiddlewareResolver / PermissionMiddlewareResolver）标注
+        // @MiddlewareAlias 后由 SpringBoot 自动扫描注册，无需在此手动 new 中间件实例：
+        //   "auth:admin"     -> 认证中间件，使用 admin 守卫
+        //   "permission:admin" -> 管理员 RBAC 权限中间件（RoutePermissionMiddleware）
+        //   "auth:api"       -> 认证中间件，使用 api 守卫
+        //   "permission:api" -> 用户 RBAC 权限中间件（UserRoutePermissionMiddleware）
 
         // ===== 页面路由（jblade 模板渲染，无需认证） =====
         router.get("/", pageController::index);
@@ -195,7 +204,7 @@ public class Api {
                 admin.delete("/remote/sub-servers/{subServerId}", remoteController::unregisterSubServer);
                 admin.post("/remote/sub-servers/{subServerId}/connect", remoteController::connectSubServer);
                 admin.post("/remote/sub-servers/{subServerId}/disconnect", remoteController::disconnectSubServer);
-            }).middleware(new Authenticate("admin"), adminRbacMiddleware);
+            }).middleware("auth:admin", "permission:admin");
 
             // ===== User 路由（api guard + user 路由权限中间件） =====
             api.group(Map.of(), user -> {
@@ -209,7 +218,7 @@ public class Api {
                 user.get("/plugin/java/status", pluginRun::javaStatus);
                 user.post("/plugin/jar/run", pluginRun::runJar);
                 user.get("/plugin/jar/status", pluginRun::jarStatus);
-            }).middleware(new Authenticate("api"), userRbacMiddleware);
+            }).middleware("auth:api", "permission:api");
         });
     }
 }
