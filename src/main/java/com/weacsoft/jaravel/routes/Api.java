@@ -55,6 +55,11 @@ public class Api {
             api.post("/auth/refresh", "AuthController::refresh");
             api.get("/plugin/overview", "PluginRunController::overview");
 
+            // ===== 事件与缓存演示路由（无需认证） =====
+            api.get("/demo/cache", "EventCacheDemoController::demoMultiCache");
+            api.get("/demo/event/user", "EventCacheDemoController::demoUserEvent");
+            api.get("/demo/event/order", "EventCacheDemoController::demoOrderEvent");
+
             // ===== Admin 路由（admin guard + admin 路由权限中间件） =====
             api.group(Map.of(), admin -> {
                 admin.post("/auth/admin/logout", "AuthController::adminLogout");

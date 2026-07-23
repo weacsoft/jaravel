@@ -34,13 +34,61 @@ jaravel:
     auto-run: false
     source: classpath
   cache:
+    # 多 cache store 演示：默认使用 array（内存），各模块可指定不同 store
     default-store: array
     prefix: jaravel
+    # file 驱动目录（空则使用系统临时目录）
+    file-dir: ""
+    # database 驱动表名（需先执行 artisan cache:table 建表）
+    database-table: jaravel_cache
+  # ===== 多 Cache 模块级配置 =====
+  # 各模块通过独立配置项指定 cache store，空串表示使用 cache 模块的默认 store
+  # wechat 模块使用 file store（跨重启持久化 access_token）
+  wechat:
+    cache-store: "file"
+    # ... 其他 wechat 配置
+  # model-cache 模块使用 database store（需先执行 artisan cache:table）
+  model-cache:
+    store: "database"
+    default-ttl: 3600
+  # jwt 模块使用 array store（内存即可，重启后 token 自然过期）
+  jwt:
+    secret: jaravel-secret-key-change-in-production-must-be-32-bytes
+    ttl: 3600000
+    refresh-ttl: 604800000
+    refresh-enabled: true
+    blacklist-prefix: "jwt:blacklist:"
+    blacklist-store: "array"
+  # ===== 队列配置 =====
+  # 默认使用 sync（内存队列），无需数据库表
+  # 切换到 database 驱动需先执行 artisan queue:table 建表
+  queue:
+    driver: sync                      # sync（默认，内存队列）| database | redis
+    failed-job-retention-days: 7
+    database:
+      table: jobs
+      retry-after: 1800
+      max-attempts: 3
+      retry-delay-ms: 5000
+      poll-interval-ms: 1000
+      worker-threads: 1
+      auto-start: false
+      # 多队列消费：worker 启动后消费以下队列
+      queues:
+        - default
+        - emails
+        - payments
+        - invoices
+  # ===== 事件队列配置（多队列线程池） =====
   event:
     queue-enabled: true
     queue:
-      default:
-        pool-size: 4
+      default-pool-size: 4           # 默认队列线程池大小
+      # 各命名队列独立线程池大小，互不阻塞
+      queue-pool-sizes:
+        emails: 2
+        payments: 2
+        invoices: 1
     retry:
       max-attempts: 3
       delay-ms: 1000
