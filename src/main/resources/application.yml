@@ -27,12 +27,11 @@ jaravel:
     ttl: 3600000
     refresh-ttl: 604800000
     refresh-enabled: true
-    blacklist-store: array
     blacklist-prefix: "jwt:blacklist:"
   migration:
     enabled: true
     table: migrations
-    auto-run: true
+    auto-run: false
     source: classpath
   cache:
     default-store: array
@@ -126,5 +125,5 @@ jaravel:
 
 logging:
   level:
-    com.weacsoft.jaravel: DEBUG
+    com.weacsoft.jaravel: INFO
     gaarason.database: INFO
