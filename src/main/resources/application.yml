@@ -22,12 +22,6 @@ jaravel:
     js-path: /static/wire.js
   auth:
     default-guard: api
-  jwt:
-    secret: jaravel-secret-key-change-in-production-must-be-32-bytes
-    ttl: 3600000
-    refresh-ttl: 604800000
-    refresh-enabled: true
-    blacklist-prefix: "jwt:blacklist:"
   migration:
     enabled: true
     table: migrations
