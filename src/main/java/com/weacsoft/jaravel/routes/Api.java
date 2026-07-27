@@ -63,7 +63,6 @@ public class Api {
             api.get("/demo/cache", "EventCacheDemoController::demoMultiCache");
             api.get("/demo/event/user", "EventCacheDemoController::demoUserEvent");
             api.get("/demo/event/order", "EventCacheDemoController::demoOrderEvent");
-            api.get("/demo/app", "EventCacheDemoController::demoAppContainer");
 
             // ===== Admin 路由（admin guard + admin 路由权限中间件） =====
             api.group(Map.of(), admin -> {

@@ -1,8 +1,7 @@
 package com.weacsoft.jaravel.app.http.middleware;
 
 import com.weacsoft.jaravel.app.service.AdminRolePermissionService;
-import com.weacsoft.jaravel.config.AppConfig;
-import com.weacsoft.jaravel.vendor.auth.AuthManager;
+import com.weacsoft.jaravel.vendor.auth.facade.Auth;
 import com.weacsoft.jaravel.vendor.http.controller.request.Request;
 import com.weacsoft.jaravel.vendor.http.controller.response.Response;
 import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
@@ -18,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * 工作流程：
  * <ol>
- *   <li>从 {@link AuthManager} 获取当前登录管理员的 ID（支持指定守卫）；</li>
+ *   <li>从 {@link Auth} 获取当前登录管理员的 ID（支持指定守卫）；</li>
  *   <li>从 {@code HttpServletRequest} 获取当前请求的路由路径；</li>
  *   <li>调用 {@link AdminRolePermissionService#adminCanAccessRoute(Long, String)}
  *       判断管理员是否有权访问该路由（默认拒绝 + 树形祖先授权 + 路由模式匹配）；</li>
@@ -80,18 +79,17 @@ public class RoutePermissionMiddleware implements Middleware {
         // 优先使用 params 中的守卫（来自别名表达式如 permission:admin），其次使用构造器指定的守卫
         String effectiveGuard = (params != null && params.length > 0) ? params[0] : this.guard;
         // 1. 检查登录状态
-        AuthManager auth = AppConfig.app().auth();
         boolean authenticated = (effectiveGuard != null && !effectiveGuard.isEmpty())
-                ? auth.guard(effectiveGuard).check()
-                : auth.check();
+                ? Auth.guard(effectiveGuard).check()
+                : Auth.check();
         if (!authenticated) {
             return ResponseBuilder.error(401, "未登录");
         }
 
         // 2. 获取管理员 ID
         Object idObj = (effectiveGuard != null && !effectiveGuard.isEmpty())
-                ? auth.guard(effectiveGuard).id()
-                : auth.id();
+                ? Auth.guard(effectiveGuard).id()
+                : Auth.id();
         Long adminId = toLong(idObj);
         if (adminId == null) {
             log.warn("[RoutePermission] 无法获取管理员 ID，拒绝访问");
@@ -119,7 +117,7 @@ public class RoutePermissionMiddleware implements Middleware {
     }
 
     /**
-     * 将 auth.id() 返回的 Object 转换为 Long，兼容 Long / Integer / String / Number 类型。
+     * 将 Auth.id() 返回的 Object 转换为 Long，兼容 Long / Integer / String / Number 类型。
      */
     private Long toLong(Object obj) {
         if (obj == null) {
