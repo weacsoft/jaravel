@@ -2,7 +2,7 @@ package com.weacsoft.jaravel.app.http.controller;
 
 import com.weacsoft.jaravel.app.model.User;
 import com.weacsoft.jaravel.app.service.PluginRunService;
-import com.weacsoft.jaravel.vendor.auth.facade.Auth;
+import com.weacsoft.jaravel.config.AppConfig;
 import com.weacsoft.jaravel.vendor.http.controller.Controllers;
 import com.weacsoft.jaravel.vendor.http.controller.request.Request;
 import com.weacsoft.jaravel.vendor.http.controller.response.Response;
@@ -23,7 +23,7 @@ import java.util.Map;
  * 插件运行控制器，提供 Java 源码在线编译执行和 Jar 插件反射调用。
  * <p>
  * 插件执行路由通过 Authenticate("api") + UserRoutePermissionMiddleware 中间件保护，
- * 控制器内不再手动校验权限，从 Auth.user() 获取当前用户。
+ * 控制器内不再手动校验权限，从 AppConfig.app().auth().user() 获取当前用户。
  */
 @Controller
 public class PluginRunController implements Controllers {
@@ -54,7 +54,7 @@ public class PluginRunController implements Controllers {
         }
         boolean inMemory = !"false".equalsIgnoreCase(request.input("in_memory", "true"));
 
-        User user = (User) Auth.user();
+        User user = (User) AppConfig.app().auth().user();
         Map<String, Object> result = PluginRunService.runJava(code, inMemory);
         if (user != null) {
             result.put("user_id", user.getId());

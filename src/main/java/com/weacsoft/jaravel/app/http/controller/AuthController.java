@@ -4,8 +4,9 @@ import com.weacsoft.jaravel.app.model.User;
 import com.weacsoft.jaravel.app.model.admin.Admin;
 import com.weacsoft.jaravel.app.service.CaptchaService;
 import com.weacsoft.jaravel.app.service.UserService;
+import com.weacsoft.jaravel.config.AppConfig;
+import com.weacsoft.jaravel.vendor.auth.AuthManager;
 import com.weacsoft.jaravel.vendor.auth.contract.AuthGuard;
-import com.weacsoft.jaravel.vendor.auth.facade.Auth;
 import com.weacsoft.jaravel.vendor.http.controller.Controllers;
 import com.weacsoft.jaravel.vendor.http.controller.request.Request;
 import com.weacsoft.jaravel.vendor.http.controller.response.Response;
@@ -27,6 +28,9 @@ import java.util.Map;
  *   <li><b>admin</b>：JWT 驱动，管理员场景（无状态，返回 token）</li>
  * </ul>
  * 密码校验在应用层完成（Service / Controller），不在 provider / guard 中。
+ * <p>
+ * <b>服务访问方式</b>：使用 {@code AppConfig.app().auth()} 获取 {@link AuthManager}，
+ * 替代 {@code Auth.xxx()} 静态门面。
  */
 @Controller
 public class AuthController implements Controllers {
@@ -47,7 +51,7 @@ public class AuthController implements Controllers {
         String password = request.input("password");
 
         User user = UserService.login(number, password);
-        Auth.guard("web").login(user);
+        AppConfig.app().auth().guard("web").login(user);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("user", buildUserInfo(user));
         result.put("message", "Session 登录成功");
@@ -58,7 +62,7 @@ public class AuthController implements Controllers {
      * Session 登出（web guard），清除 HttpSession 中的登录态。
      */
     public Response sessionLogout(Request request) {
-        Auth.logout("web");
+        AppConfig.app().auth().logout("web");
         return ResponseBuilder.json(Map.of("message", "已退出 Session 登录"));
     }
 
@@ -66,7 +70,7 @@ public class AuthController implements Controllers {
      * 获取当前 Session 登录用户（web guard）。
      */
     public Response sessionMe(Request request) {
-        User user = (User) Auth.guard("web").user();
+        User user = (User) AppConfig.app().auth().guard("web").user();
         if (user == null) {
             return ResponseBuilder.error(401, "Unauthorized");
         }
@@ -98,9 +102,10 @@ public class AuthController implements Controllers {
             return ResponseBuilder.error(403, "管理员账号已禁用");
         }
 
-        Auth.guard("admin").login(admin);
+        AuthManager auth = AppConfig.app().auth();
+        auth.guard("admin").login(admin);
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("token", Auth.guard("admin").token());
+        result.put("token", auth.guard("admin").token());
         result.put("admin", buildAdminInfo(admin));
         result.put("message", "管理员登录成功");
         return ResponseBuilder.json(result);
@@ -110,7 +115,7 @@ public class AuthController implements Controllers {
      * 管理员登出（admin guard），JWT token 加入黑名单。
      */
     public Response adminLogout(Request request) {
-        Auth.logout("admin");
+        AppConfig.app().auth().logout("admin");
         return ResponseBuilder.json(Map.of("message", "管理员已退出登录"));
     }
 
@@ -118,7 +123,7 @@ public class AuthController implements Controllers {
      * 获取当前管理员信息（admin guard）。
      */
     public Response adminMe(Request request) {
-        Admin admin = (Admin) Auth.guard("admin").user();
+        Admin admin = (Admin) AppConfig.app().auth().guard("admin").user();
         if (admin == null) {
             return ResponseBuilder.error(401, "Unauthorized");
         }
@@ -136,10 +141,11 @@ public class AuthController implements Controllers {
         String password = request.input("password");
         String email = request.input("email");
         User user = UserService.register(name, number, password, email);
-        Auth.login(user);
+        AuthManager auth = AppConfig.app().auth();
+        auth.login(user);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("user", user);
-        result.put("token", Auth.token());
+        result.put("token", auth.token());
         result.put("refresh_token", getRefreshToken());
         result.put("message", "注册成功");
         return ResponseBuilder.json(result);
@@ -161,9 +167,10 @@ public class AuthController implements Controllers {
         }
 
         User user = UserService.login(number, password);
-        Auth.login(user);
+        AuthManager auth = AppConfig.app().auth();
+        auth.login(user);
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("token", Auth.token());
+        result.put("token", auth.token());
         result.put("refresh_token", getRefreshToken());
         result.put("user", user);
         result.put("message", "登录成功");
@@ -174,7 +181,7 @@ public class AuthController implements Controllers {
      * 用户登出（api guard），JWT token 加入黑名单。
      */
     public Response logout(Request request) {
-        Auth.logout();
+        AppConfig.app().auth().logout();
         return ResponseBuilder.json(Map.of("message", "已退出登录"));
     }
 
@@ -182,7 +189,7 @@ public class AuthController implements Controllers {
      * 获取当前用户信息（api guard）。
      */
     public Response me(Request request) {
-        User user = (User) Auth.user();
+        User user = (User) AppConfig.app().auth().user();
         if (user == null) {
             return ResponseBuilder.error(401, "Unauthorized");
         }
@@ -197,7 +204,7 @@ public class AuthController implements Controllers {
         if (refreshToken == null || refreshToken.isEmpty()) {
             return ResponseBuilder.error(400, "缺少 refresh_token 参数");
         }
-        AuthGuard guard = Auth.guard("api");
+        AuthGuard guard = AppConfig.app().auth().guard("api");
         if (!(guard instanceof JwtGuard jwtGuard)) {
             return ResponseBuilder.error(500, "默认 guard 不是 JWT 驱动");
         }
@@ -235,7 +242,7 @@ public class AuthController implements Controllers {
 
     /** 获取当前 api guard 的 refresh token */
     private String getRefreshToken() {
-        AuthGuard guard = Auth.guard("api");
+        AuthGuard guard = AppConfig.app().auth().guard("api");
         if (guard instanceof JwtGuard jwtGuard) {
             return jwtGuard.refreshToken();
         }

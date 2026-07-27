@@ -2,7 +2,7 @@ package com.weacsoft.jaravel.app.http.controller;
 
 import com.weacsoft.jaravel.app.event.OrderCreatedEvent;
 import com.weacsoft.jaravel.app.event.UserRegisteredEvent;
-import com.weacsoft.jaravel.vendor.core.App;
+import com.weacsoft.jaravel.config.AppConfig;
 import com.weacsoft.jaravel.vendor.event.Dispatcher;
 import com.weacsoft.jaravel.vendor.http.controller.Controllers;
 import com.weacsoft.jaravel.vendor.http.controller.request.Request;
@@ -25,9 +25,9 @@ import java.util.Map;
  *   <li>{@code GET /api/demo/event/user} — 分发用户注册事件（同步 + emails 队列）</li>
  *   <li>{@code GET /api/demo/event/order} — 分发订单创建事件（payments + invoices 队列）</li>
  * </ul>
- * <b>App.app() 演示</b>：
+ * <b>AppConfig.app() 演示</b>：
  * <ul>
- *   <li>{@code GET /api/demo/app} — 展示通过 App.app() 链式访问各类服务</li>
+ *   <li>{@code GET /api/demo/app} — 展示通过 AppConfig.app() 链式访问各类服务</li>
  * </ul>
  */
 @Controller
@@ -36,19 +36,13 @@ public class EventCacheDemoController implements Controllers {
     /**
      * 演示多 cache store：同一应用中使用 array / file / database 三种缓存。
      * <p>
-     * 使用 {@code App.app().cache()} 获取 CacheManager，替代 {@code Cache::} 静态门面。
-     * 不同模块可以使用不同的 cache store：
-     * <ul>
-     *   <li>默认 store（array）：用于临时数据、高频读写</li>
-     *   <li>file store：用于文件型缓存，跨重启持久化</li>
-     *   <li>database store：用于数据库缓存，需先执行 {@code artisan cache:table}</li>
-     * </ul>
+     * 使用 {@code AppConfig.app().cache()} 获取 CacheManager，替代 {@code Cache::} 静态门面。
      */
     public Response demoMultiCache(Request request) {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        // 使用 App.app().cache() 获取 CacheManager（替代 Cache:: 静态门面）
-        var cache = App.app().make(com.weacsoft.jaravel.vendor.cache.CacheManager.class);
+        // 使用 typed 访问器 cache() 获取 CacheManager
+        var cache = AppConfig.app().cache();
         var defaultStore = cache.store();
 
         // 1. 使用默认 store（array）
@@ -71,7 +65,6 @@ public class EventCacheDemoController implements Controllers {
             result.put("database-store", "database store 不可用（请先执行 artisan cache:table）: " + e.getMessage());
         }
 
-        // 4. 模块级 cache 配置说明
         result.put("config-note", "各模块通过独立配置项指定 cache store：wechat=file, model-cache=database, jwt=array");
 
         return ResponseBuilder.json(result);
@@ -80,15 +73,11 @@ public class EventCacheDemoController implements Controllers {
     /**
      * 演示用户注册事件分发：
      * <p>
-     * 使用 {@code App.app().event()} 获取 Dispatcher，替代 {@code Facade.resolve(Dispatcher.class)}。
-     * <ul>
-     *   <li>{@code RecordUserRegistrationListener} — 同步执行（不实现 ShouldQueue）</li>
-     *   <li>{@code SendWelcomeEmailListener} — 异步执行到 {@code emails} 队列</li>
-     * </ul>
+     * 使用 {@code AppConfig.app().event()} 获取 Dispatcher，替代 {@code Facade.resolve(Dispatcher.class)}。
      */
     public Response demoUserEvent(Request request) {
-        // 使用 App.app().make(Dispatcher.class) 获取事件分发器
-        Dispatcher dispatcher = App.app().make(Dispatcher.class);
+        // 使用 typed 访问器 event() 获取事件分发器
+        Dispatcher dispatcher = AppConfig.app().event();
         dispatcher.dispatch(new UserRegisteredEvent(1L, "demo-user"));
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -104,15 +93,10 @@ public class EventCacheDemoController implements Controllers {
     /**
      * 演示订单创建事件分发：
      * <p>
-     * 使用 {@code App.app().make(Dispatcher.class)} 获取 Dispatcher。
-     * <ul>
-     *   <li>{@code ProcessOrderPaymentListener} — 异步执行到 {@code payments} 队列</li>
-     *   <li>{@code GenerateInvoiceListener} — 异步执行到 {@code invoices} 队列（延迟 5 秒）</li>
-     * </ul>
-     * 两个监听器路由到不同队列，互不阻塞，可并行执行。
+     * 使用 {@code AppConfig.app().event()} 获取 Dispatcher。
      */
     public Response demoOrderEvent(Request request) {
-        Dispatcher dispatcher = App.app().make(Dispatcher.class);
+        Dispatcher dispatcher = AppConfig.app().event();
         dispatcher.dispatch(new OrderCreatedEvent(1001L, 1L, 99.99));
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -126,29 +110,35 @@ public class EventCacheDemoController implements Controllers {
     }
 
     /**
-     * 演示 App.app() 链式服务访问，替代 Facade 静态代理。
+     * 演示 AppConfig.app() 链式服务访问，替代 Facade 静态代理。
      * <p>
-     * 展示通过 {@code App.app()} 获取应用容器后，使用 {@code make(Class)} 通用方法
-     * 或 typed 访问器（需强转为 AppConfig）访问各类服务。
+     * 展示三种访问方式：
+     * <ol>
+     *   <li>typed 访问器：{@code AppConfig.app().auth()} — 免强转，推荐</li>
+     *   <li>make(String) 别名：{@code AppConfig.app().make("auth")} — 自动注册的别名</li>
+     *   <li>make(Class) 通用：{@code AppConfig.app().make(AuthManager.class)} — 任何模块可用</li>
+     * </ol>
      */
     public Response demoAppContainer(Request request) {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        // 通用方式：App.app().make(Class) — 任何模块均可使用
-        var auth = App.app().make(com.weacsoft.jaravel.vendor.auth.AuthManager.class);
-        result.put("auth-default-guard", auth.getDefaultGuard());
-        result.put("auth-has-guards", auth.hasGuards());
+        // 方式一：typed 访问器（免强转，推荐）
+        var auth = AppConfig.app().auth();
+        result.put("typed-auth-guard", auth.getDefaultGuard());
+        result.put("typed-auth-has-guards", auth.hasGuards());
 
-        var config = App.app().make(com.weacsoft.jaravel.vendor.core.config.ConfigRepository.class);
-        result.put("config-app-name", config.string("app.name", "Jaravel"));
+        // 方式二：make(String) 别名（自动注册的别名，对齐 Laravel app('auth')）
+        var authByAlias = AppConfig.app().<com.weacsoft.jaravel.vendor.auth.AuthManager>make("auth");
+        result.put("alias-auth-same-instance", auth == authByAlias);
 
-        // 自定义服务注册演示
-        App.app().singleton("demo:greeting", () -> "Hello from App.app()!");
-        result.put("custom-service", App.app().make("demo:greeting"));
-        result.put("custom-bound", App.app().bound("demo:greeting"));
+        // 方式三：make(Class) 通用方式
+        var config = AppConfig.app().make(com.weacsoft.jaravel.vendor.core.config.ConfigRepository.class);
+        result.put("make-class-config-name", config.string("app.name", "Jaravel"));
 
-        // typed 访问器演示（需强转为 AppConfig）
-        result.put("note", "typed 访问器 (auth()/cache()/config() 等) 需强转为 AppConfig，或在应用模块自定义 App 类");
+        // 自定义服务注册演示（singleton + make）
+        AppConfig.app().singleton("demo:greeting", () -> "Hello from AppConfig.app()!");
+        result.put("custom-service", AppConfig.app().make("demo:greeting"));
+        result.put("custom-bound", AppConfig.app().bound("demo:greeting"));
 
         return ResponseBuilder.json(result);
     }
