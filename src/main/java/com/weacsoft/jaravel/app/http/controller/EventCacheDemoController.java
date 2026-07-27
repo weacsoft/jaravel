@@ -2,8 +2,7 @@ package com.weacsoft.jaravel.app.http.controller;
 
 import com.weacsoft.jaravel.app.event.OrderCreatedEvent;
 import com.weacsoft.jaravel.app.event.UserRegisteredEvent;
-import com.weacsoft.jaravel.vendor.cache.Cache;
-import com.weacsoft.jaravel.vendor.core.Facade;
+import com.weacsoft.jaravel.vendor.core.App;
 import com.weacsoft.jaravel.vendor.event.Dispatcher;
 import com.weacsoft.jaravel.vendor.http.controller.Controllers;
 import com.weacsoft.jaravel.vendor.http.controller.request.Request;
@@ -26,6 +25,10 @@ import java.util.Map;
  *   <li>{@code GET /api/demo/event/user} — 分发用户注册事件（同步 + emails 队列）</li>
  *   <li>{@code GET /api/demo/event/order} — 分发订单创建事件（payments + invoices 队列）</li>
  * </ul>
+ * <b>App.app() 演示</b>：
+ * <ul>
+ *   <li>{@code GET /api/demo/app} — 展示通过 App.app() 链式访问各类服务</li>
+ * </ul>
  */
 @Controller
 public class EventCacheDemoController implements Controllers {
@@ -33,6 +36,7 @@ public class EventCacheDemoController implements Controllers {
     /**
      * 演示多 cache store：同一应用中使用 array / file / database 三种缓存。
      * <p>
+     * 使用 {@code App.app().cache()} 获取 CacheManager，替代 {@code Cache::} 静态门面。
      * 不同模块可以使用不同的 cache store：
      * <ul>
      *   <li>默认 store（array）：用于临时数据、高频读写</li>
@@ -43,22 +47,26 @@ public class EventCacheDemoController implements Controllers {
     public Response demoMultiCache(Request request) {
         Map<String, Object> result = new LinkedHashMap<>();
 
+        // 使用 App.app().cache() 获取 CacheManager（替代 Cache:: 静态门面）
+        var cache = App.app().make(com.weacsoft.jaravel.vendor.cache.CacheManager.class);
+        var defaultStore = cache.store();
+
         // 1. 使用默认 store（array）
-        Cache.put("demo:default", "hello-from-array", 60);
-        result.put("default-store", Cache.get("demo:default"));
+        defaultStore.put("demo:default", "hello-from-array", 60);
+        result.put("default-store", defaultStore.get("demo:default"));
 
         // 2. 使用 file store
         try {
-            Cache.store("file").put("demo:file", "hello-from-file", 60);
-            result.put("file-store", Cache.store("file").get("demo:file"));
+            cache.store("file").put("demo:file", "hello-from-file", 60);
+            result.put("file-store", cache.store("file").get("demo:file"));
         } catch (Exception e) {
             result.put("file-store", "file store 不可用: " + e.getMessage());
         }
 
         // 3. 使用 database store（需先执行 artisan cache:table 建表）
         try {
-            Cache.store("database").put("demo:db", "hello-from-database", 60);
-            result.put("database-store", Cache.store("database").get("demo:db"));
+            cache.store("database").put("demo:db", "hello-from-database", 60);
+            result.put("database-store", cache.store("database").get("demo:db"));
         } catch (Exception e) {
             result.put("database-store", "database store 不可用（请先执行 artisan cache:table）: " + e.getMessage());
         }
@@ -71,13 +79,16 @@ public class EventCacheDemoController implements Controllers {
 
     /**
      * 演示用户注册事件分发：
+     * <p>
+     * 使用 {@code App.app().event()} 获取 Dispatcher，替代 {@code Facade.resolve(Dispatcher.class)}。
      * <ul>
      *   <li>{@code RecordUserRegistrationListener} — 同步执行（不实现 ShouldQueue）</li>
      *   <li>{@code SendWelcomeEmailListener} — 异步执行到 {@code emails} 队列</li>
      * </ul>
      */
     public Response demoUserEvent(Request request) {
-        Dispatcher dispatcher = Facade.resolve(Dispatcher.class);
+        // 使用 App.app().make(Dispatcher.class) 获取事件分发器
+        Dispatcher dispatcher = App.app().make(Dispatcher.class);
         dispatcher.dispatch(new UserRegisteredEvent(1L, "demo-user"));
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -92,6 +103,8 @@ public class EventCacheDemoController implements Controllers {
 
     /**
      * 演示订单创建事件分发：
+     * <p>
+     * 使用 {@code App.app().make(Dispatcher.class)} 获取 Dispatcher。
      * <ul>
      *   <li>{@code ProcessOrderPaymentListener} — 异步执行到 {@code payments} 队列</li>
      *   <li>{@code GenerateInvoiceListener} — 异步执行到 {@code invoices} 队列（延迟 5 秒）</li>
@@ -99,7 +112,7 @@ public class EventCacheDemoController implements Controllers {
      * 两个监听器路由到不同队列，互不阻塞，可并行执行。
      */
     public Response demoOrderEvent(Request request) {
-        Dispatcher dispatcher = Facade.resolve(Dispatcher.class);
+        Dispatcher dispatcher = App.app().make(Dispatcher.class);
         dispatcher.dispatch(new OrderCreatedEvent(1001L, 1L, 99.99));
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -109,6 +122,34 @@ public class EventCacheDemoController implements Controllers {
                 "GenerateInvoiceListener (queue=invoices, delay=5s)"
         });
         result.put("message", "事件已分发到不同队列，查看日志输出");
+        return ResponseBuilder.json(result);
+    }
+
+    /**
+     * 演示 App.app() 链式服务访问，替代 Facade 静态代理。
+     * <p>
+     * 展示通过 {@code App.app()} 获取应用容器后，使用 {@code make(Class)} 通用方法
+     * 或 typed 访问器（需强转为 AppConfig）访问各类服务。
+     */
+    public Response demoAppContainer(Request request) {
+        Map<String, Object> result = new LinkedHashMap<>();
+
+        // 通用方式：App.app().make(Class) — 任何模块均可使用
+        var auth = App.app().make(com.weacsoft.jaravel.vendor.auth.AuthManager.class);
+        result.put("auth-default-guard", auth.getDefaultGuard());
+        result.put("auth-has-guards", auth.hasGuards());
+
+        var config = App.app().make(com.weacsoft.jaravel.vendor.core.config.ConfigRepository.class);
+        result.put("config-app-name", config.string("app.name", "Jaravel"));
+
+        // 自定义服务注册演示
+        App.app().singleton("demo:greeting", () -> "Hello from App.app()!");
+        result.put("custom-service", App.app().make("demo:greeting"));
+        result.put("custom-bound", App.app().bound("demo:greeting"));
+
+        // typed 访问器演示（需强转为 AppConfig）
+        result.put("note", "typed 访问器 (auth()/cache()/config() 等) 需强转为 AppConfig，或在应用模块自定义 App 类");
+
         return ResponseBuilder.json(result);
     }
 }
