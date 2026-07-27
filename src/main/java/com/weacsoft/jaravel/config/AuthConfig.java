@@ -2,16 +2,23 @@ package com.weacsoft.jaravel.config;
 
 import com.weacsoft.jaravel.app.model.User;
 import com.weacsoft.jaravel.app.model.admin.Admin;
-import com.weacsoft.jaravel.vendor.auth.AuthManager;
+import com.weacsoft.jaravel.vendor.auth.contract.GuardDefinition;
+import com.weacsoft.jaravel.vendor.auth.contract.UserProvider;
 import com.weacsoft.jaravel.vendor.database.EloquentUserProvider;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
  * 认证配置（对齐 Laravel 的 {@code config/auth.php}）。
  * <p>
- * 通过构造器注入 {@link AuthManager} 和用户模型，在构造时注册用户提供者（provider）
- * 与守卫（guard）。
- * <p>
+ * 纯 {@code @Bean} 声明式配置，无构造方法副作用：
+ * <ul>
+ *   <li>{@code @Bean("users")} / {@code @Bean("admins")} — 声明 UserProvider，bean name 即 provider name</li>
+ *   <li>{@code @Bean("web")} / {@code @Bean("api")} / {@code @Bean("admin")} — 声明 GuardDefinition，bean name 即 guard name</li>
+ * </ul>
+ * {@code AuthAutoConfiguration} 通过 {@code Map<String, UserProvider>} 和 {@code Map<String, GuardDefinition>}
+ * 自动收集并注册到 {@link com.weacsoft.jaravel.vendor.auth.AuthManager}。
+ *
  * <h3>认证架构</h3>
  * <ul>
  *   <li><b>认证驱动</b>（driver）：{@code session}（登录态存储）| {@code jwt}（无状态 token）</li>
@@ -30,6 +37,14 @@ import org.springframework.context.annotation.Configuration;
  * 'admin' => driver=jwt,    provider=admins    // 管理后台：JWT 驱动 + admins provider
  * </pre>
  *
+ * <h3>类型推断</h3>
+ * 由于 provider 在创建时已绑定具体 Model 类型，{@code Auth.guard("web").user()} 可通过
+ * 泛型方法 + 目标类型推断直接返回具体用户类型，无需强转：
+ * <pre>
+ * User user = Auth.guard("web").user();      // 编译器推断 T = User
+ * Admin admin = Auth.guard("admin").user();  // 编译器推断 T = Admin
+ * </pre>
+ *
  * <h3>认证流程</h3>（密码校验在应用层，不在 provider 中）：
  * <ol>
  *   <li>应用层按凭证查出用户：{@code User user = User.findByNumber(number);}</li>
@@ -41,36 +56,77 @@ import org.springframework.context.annotation.Configuration;
  * <h3>Session 存储切换</h3>
  * Session 存储不在此处配置，而在 {@link SessionConfig} 中全局决定。
  * 默认使用 CookieSessionStore（Servlet HttpSession），如需 Redis 见 {@link SessionConfig}。
+ *
+ * <h3>替代方案：配置式注册</h3>
+ * 也可不写此类，改用 {@code application.yml} 配置式注册（需引入 database 模块以获得 eloquent 驱动）：
+ * <pre>
+ * jaravel:
+ *   auth:
+ *     default-guard: api
+ *     providers:
+ *       users:
+ *         driver: eloquent
+ *         model: com.weacsoft.jaravel.app.model.User
+ *         credential-field: number
+ *       admins:
+ *         driver: eloquent
+ *         model: com.weacsoft.jaravel.app.model.admin.Admin
+ *         credential-field: username
+ *     guards:
+ *       web:   { driver: session, provider: users }
+ *       api:   { driver: jwt,     provider: users }
+ *       admin: { driver: jwt,     provider: admins }
+ * </pre>
  */
 @Configuration
 public class AuthConfig {
 
+    // ---- 注册用户提供者（provider）----
+    // @Bean("users") 的 bean name 即 provider name
+    // AuthAutoConfiguration 通过 Map<String, UserProvider> 自动收集
+
     /**
-     * 通过构造器注入完成认证配置（对齐 WireConfig 模式）。
-     * <p>
-     * Spring 保证 AuthManager、User、Admin Bean 就绪后才调用构造器，
-     * 因此可安全注册 provider 和 guard。
+     * User provider：用户表，凭证字段 number（工号）。
      */
-    public AuthConfig(AuthManager authManager, User userModel, Admin adminModel) {
-        // ---- 注册用户提供者（provider）----
-        // User provider：用户表，凭证字段 number（工号）
-        authManager.registerProvider("users",
-                new EloquentUserProvider<>(userModel, "number"));
+    @Bean("users")
+    public UserProvider usersProvider(User userModel) {
+        return new EloquentUserProvider<>(userModel, "number");
+    }
 
-        // Admin provider：管理员表，凭证字段 username
-        authManager.registerProvider("admins",
-                new EloquentUserProvider<>(adminModel, "username"));
+    /**
+     * Admin provider：管理员表，凭证字段 username。
+     */
+    @Bean("admins")
+    public UserProvider adminsProvider(Admin adminModel) {
+        return new EloquentUserProvider<>(adminModel, "username");
+    }
 
-        // ---- 注册守卫（guard）----
-        // web 守卫：Session 驱动，绑定 users provider
-        // Session 存储由 SessionConfig 全局决定（默认 CookieSessionStore）
-        authManager.registerGuard("web", "session", "users");
-        // api 守卫：JWT 驱动，绑定 users provider（用户场景，无状态）
-        authManager.registerGuard("api", "jwt", "users");
-        // admin 守卫：JWT 驱动，绑定 admins provider（管理员场景，无状态）
-        authManager.registerGuard("admin", "jwt", "admins");
+    // ---- 注册守卫（guard）----
+    // @Bean("web") 的 bean name 即 guard name
+    // AuthAutoConfiguration 通过 Map<String, GuardDefinition> 自动收集
 
-        // ---- 设默认守卫 ----
-        authManager.setDefaultGuard("api");
+    /**
+     * web 守卫：Session 驱动，绑定 users provider。
+     * Session 存储由 SessionConfig 全局决定（默认 CookieSessionStore）。
+     */
+    @Bean("web")
+    public GuardDefinition webGuard() {
+        return GuardDefinition.of("session", "users");
+    }
+
+    /**
+     * api 守卫：JWT 驱动，绑定 users provider（用户场景，无状态）。
+     */
+    @Bean("api")
+    public GuardDefinition apiGuard() {
+        return GuardDefinition.of("jwt", "users");
+    }
+
+    /**
+     * admin 守卫：JWT 驱动，绑定 admins provider（管理员场景，无状态）。
+     */
+    @Bean("admin")
+    public GuardDefinition adminGuard() {
+        return GuardDefinition.of("jwt", "admins");
     }
 }
