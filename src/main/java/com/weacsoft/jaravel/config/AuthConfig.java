@@ -3,16 +3,14 @@ package com.weacsoft.jaravel.config;
 import com.weacsoft.jaravel.app.model.User;
 import com.weacsoft.jaravel.app.model.admin.Admin;
 import com.weacsoft.jaravel.vendor.auth.AuthManager;
-import com.weacsoft.jaravel.vendor.core.Facade;
 import com.weacsoft.jaravel.vendor.database.EloquentUserProvider;
-import org.springframework.beans.factory.SmartInitializingSingleton;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 认证配置，对齐 Laravel 的 {@code config/auth.php}。
+ * 认证配置（对齐 Laravel 的 {@code config/auth.php}）。
  * <p>
- * 在所有单例 Bean 就绪后，注册用户提供者（provider）与守卫（guard）到 {@link AuthManager}。
+ * 通过构造器注入 {@link AuthManager} 和用户模型，在构造时注册用户提供者（provider）
+ * 与守卫（guard）。
  * <p>
  * <h3>认证架构</h3>
  * <ul>
@@ -45,17 +43,16 @@ import org.springframework.context.annotation.Configuration;
  * 默认使用 CookieSessionStore（Servlet HttpSession），如需 Redis 见 {@link SessionConfig}。
  */
 @Configuration
-public class AuthConfig implements SmartInitializingSingleton {
+public class AuthConfig {
 
-    @Autowired
-    private AuthManager authManager;
-
-    @Override
-    public void afterSingletonsInstantiated() {
+    /**
+     * 通过构造器注入完成认证配置（对齐 WireConfig 模式）。
+     * <p>
+     * Spring 保证 AuthManager、User、Admin Bean 就绪后才调用构造器，
+     * 因此可安全注册 provider 和 guard。
+     */
+    public AuthConfig(AuthManager authManager, User userModel, Admin adminModel) {
         // ---- 注册用户提供者（provider）----
-        User userModel = Facade.resolve(User.class);
-        Admin adminModel = Facade.resolve(Admin.class);
-
         // User provider：用户表，凭证字段 number（工号）
         authManager.registerProvider("users",
                 new EloquentUserProvider<>(userModel, "number"));

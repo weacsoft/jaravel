@@ -1,4 +1,4 @@
-package com.weacsoft.jaravel.config.database;
+package com.weacsoft.jaravel.config;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.weacsoft.jaravel.vendor.core.SpringContext;
@@ -13,16 +13,14 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 
 /**
- * 数据库配置，手动创建 GaarasonDataSource（对齐 Laravel 的 {@code config/database.php}）。
+ * 数据库配置（对齐 Laravel 的 {@code config/database.php}）。
  * <p>
- * GaarasonDataSource 实现了 {@link javax.sql.DataSource} 接口，因此迁移系统可直接使用
- * GaarasonDataSource Bean 作为 JDBC DataSource。
+ * 手动创建 {@link GaarasonDataSource}（实现了 {@link javax.sql.DataSource}），
+ * 供 ORM 和迁移系统使用。
  * <p>
  * 关键步骤：手动创建 {@link ContainerBootstrap}，在 {@code initialization()} 之前注册
- * 自定义的 {@link ModelInstanceProvider} 实例化函数，使 gaarason Container 在需要
- * Model 实例时通过 Spring {@code ApplicationContext.getBean()} 获取 Spring 管理的单例
- * （带有 {@code @Autowired} 注入的数据源），而非通过反射 {@code newInstance()} 创建
- * 未受 Spring 管理的裸实例。
+ * 自定义的 {@link ModelInstanceProvider}，使 gaarason Container 在需要 Model 实例时
+ * 通过 Spring {@code ApplicationContext.getBean()} 获取 Spring 管理的单例。
  */
 @Configuration
 public class DatabaseConfig {
@@ -52,7 +50,7 @@ public class DatabaseConfig {
 
     /**
      * 主 GaarasonDataSource，供 ORM 和迁移系统使用。
-     * 标记 @Primary 使 BaseModel 默认注入此数据源，迁移系统默认使用此数据源。
+     * 标记 @Primary 使 BaseModel 默认注入此数据源。
      */
     @Bean
     @Primary

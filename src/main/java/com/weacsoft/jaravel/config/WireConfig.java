@@ -1,4 +1,4 @@
-package com.weacsoft.jaravel.config.wire;
+package com.weacsoft.jaravel.config;
 
 import com.weacsoft.jaravel.vendor.wire.WireManager;
 import org.slf4j.Logger;
@@ -11,15 +11,14 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Wire 模块配置。
+ * Wire 模块配置（对齐 Laravel Livewire 风格的部分更新）。
  * <p>
- * 显式配置 Wire 模块行为。可通过 application.yml 的 jaravel.wire.* 配置，也可在此直接编程式配置。
- * <p>
- * 配置项：
- * - jaravel.wire.auto-inject-js: 是否自动注入 wire.js（默认 true）
- * - jaravel.wire.js-path: wire.js 引用路径（默认 /static/wire.js）
- * - jaravel.wire.excluded-sections: 排除的 section 名列表（不生成 wire 标记）
- * - 设为 false 时需手动引入 wire.js，可使用 WireManager.getWireJsContent() 获取JS内容
+ * 通过构造器注入配置 WireManager 的行为，配置项来自 {@code jaravel.wire.*}：
+ * <ul>
+ *   <li>{@code jaravel.wire.auto-inject-js}：是否自动注入 wire.js（默认 true）</li>
+ *   <li>{@code jaravel.wire.js-path}：wire.js 引用路径（默认 /static/wire.js）</li>
+ *   <li>{@code jaravel.wire.excluded-sections}：排除的 section 名列表</li>
+ * </ul>
  */
 @Configuration
 public class WireConfig {
@@ -31,7 +30,6 @@ public class WireConfig {
         WireManager.setAutoInjectJs(autoInjectJs);
         WireManager.setJsPath(jsPath);
 
-        // 读取排除列表
         String excludedStr = env.getProperty("jaravel.wire.excluded-sections", "");
         if (excludedStr != null && !excludedStr.isEmpty()) {
             List<String> excluded = Arrays.asList(excludedStr.split(","));

@@ -13,7 +13,7 @@
 - **树形 RBAC 权限**：Admin 和 User 各自独立的权限树，父节点授权等同于旗下所有子节点授权
 - **Java 文件插件热重载**：监听 .java 文件变化自动重载，无需重启应用
 - **Eloquent 合并 Model**：单一类同时承担实体定义与查询能力，对齐 Laravel Eloquent
-- **Laravel 风格目录结构**：config/App.java 显式控制功能启用，config/view/、config/wire/、config/database/ 分类管理
+- **Laravel 风格目录结构**：config/AppConfig.java 显式控制功能启用，单一 config 包扁平化管理（所有配置类集中于 config/ 下）
 - **Artisan CLI**：Laravel 风格命令行工具，支持 db:seed 种子数据初始化
 - **视图预编译**：支持运行时编译(需JDK)和预编译模式(仅需JRE)，通过 `jaravel.view.precompiled-mode` 切换
 
@@ -23,17 +23,13 @@
 jaravel/
 ├── src/main/java/com/weacsoft/jaravel/
 │   ├── JaravelApplication.java              # 应用入口
-│   ├── config/                              # 配置（类似 Laravel config/）
-│   │   ├── App.java                         # 中央配置，通过 @Import 显式控制功能启用
-│   │   ├── AuthConfig.java                  # 认证配置（Guard 注册：web/api/admin 三 Guard）
-│   │   ├── SessionConfig.java               # Session 存储配置（cookie/redis）
-│   │   ├── StaticResourceConfig.java        # 静态资源配置
-│   │   ├── view/
-│   │   │   └── ViewConfig.java              # 视图引擎配置（BladeEngine，支持预编译模式）
-│   │   ├── wire/
-│   │   │   └── WireConfig.java              # Wire 模块配置（手动注入控制）
-│   │   └── database/
-│   │       └── DatabaseConfig.java          # 数据库配置（GaarasonDataSource + Druid）
+│   ├── config/                              # 配置（类似 Laravel config/，扁平化单包）
+│   │   ├── AppConfig.java                   # 中央配置，@Configuration + @Import 显式控制功能启用
+│   │   ├── ViewConfig.java                  # 视图配置，@Configuration + @Bean（BladeEngine + WebMvcConfigurer 静态资源）
+│   │   ├── DatabaseConfig.java              # 数据库配置，@Configuration + @Bean（GaarasonDataSource + Druid）
+│   │   ├── WireConfig.java                  # Wire 模块配置，@Configuration + 构造器注入（手动注入控制）
+│   │   ├── AuthConfig.java                  # 认证配置，@Configuration + 构造器注入（Guard 注册：web/api/admin 三 Guard）
+│   │   └── SessionConfig.java               # Session 存储配置，@Configuration 占位（cookie/redis）
 │   ├── routes/                              # 路由
 │   │   ├── Api.java                         # API 路由（公开 + Admin + User 三组）
 │   │   └── Web.java                         # Web 路由（首页重定向）
