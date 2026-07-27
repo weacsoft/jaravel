@@ -165,33 +165,58 @@ curl http://localhost:8080/api/plugin/overview
 
 ## 认证系统
 
-### 双 Guard 架构
+### 工厂模式架构
 
-| Guard | 驱动 | Provider | 凭证字段 | 用途 |
-|-------|------|----------|----------|------|
-| admin | JWT | admins | username | 管理员认证 |
-| api | JWT | users | number | 用户认证 |
+认证系统采用工厂模式 + `support()` 方法匹配（对齐 database-all 多数据库支持），分两层：
+
+| 层级 | 说明 | 可选值 | 匹配方式 |
+|------|------|--------|----------|
+| 认证驱动（driver） | 数据来源方式 | `session` / `jwt` | `AuthGuardDriver.support(driver)` |
+| Session 存储（session-store） | 仅 session 驱动使用 | `cookie` / `redis` | `SessionStore.support(store)` |
+
+- `session` 驱动：有状态，登录态存储在 Session 中（默认 cookie = Servlet HttpSession）
+- `jwt` 驱动：无状态，返回 token，适合 API / SPA 场景
+- 第三方模块只需实现接口并注册为 Spring Bean，`AuthAutoConfiguration` 自动收集并注册到 `AuthManager`
+
+### 三 Guard 架构
+
+| Guard | 驱动 | Session 存储 | Provider | 凭证字段 | 用途 |
+|-------|------|-------------|----------|----------|------|
+| web | session | cookie | users | number | Web 页面认证（有状态） |
+| api | jwt | - | users | number | 用户 API 认证（无状态） |
+| admin | jwt | - | admins | username | 管理员认证（无状态） |
 
 ```java
-// AuthServiceProvider 注册双 Guard
+// AuthServiceProvider 注册三 Guard
 authManager.registerProvider("users", new EloquentUserProvider<>(userModel, "number"));
 authManager.registerProvider("admins", new EloquentUserProvider<>(adminModel, "username"));
+
+// web 守卫：Session 驱动 + cookie 存储（默认）
+authManager.registerGuard("web", "session", "users", "cookie");
+// api 守卫：JWT 驱动
 authManager.registerGuard("api", "jwt", "users");
+// admin 守卫：JWT 驱动
 authManager.registerGuard("admin", "jwt", "admins");
 ```
 
 ### 路由保护
 
 ```java
+// Session 路由：web guard（Session 驱动 + cookie 存储）
+api.group(Map.of(), web -> {
+    web.post("/auth/session/logout", "AuthController::sessionLogout");
+    web.get("/auth/session/me", "AuthController::sessionMe");
+}).middleware("auth:web");
+
 // Admin 路由：admin guard + admin 路由权限中间件
 api.group(Map.of(), admin -> {
-    admin.get("/rbac/admins", rbacController::listAdmins);
-}).middleware(new Authenticate("admin"), adminRbacMiddleware);
+    admin.get("/rbac/admins", "AdminRbacController::listAdmins");
+}).middleware("auth:admin", "permission:admin");
 
 // User 路由：api guard + user 路由权限中间件
 api.group(Map.of(), user -> {
-    user.post("/plugin/java/run", pluginRun::runJava);
-}).middleware(new Authenticate("api"), userRbacMiddleware);
+    user.post("/plugin/java/run", "PluginRunController::runJava");
+}).middleware("auth:api", "permission:api");
 ```
 
 ## RBAC 权限系统

@@ -9,11 +9,12 @@ import java.util.Map;
 /**
  * API 路由定义，对齐 Laravel 的 {@code routes/api.php}。
  * <p>
- * 路由分为三组：
+ * 路由分为四组：
  * <ul>
- *   <li>公开路由：管理员/用户登录、注册、token 刷新、插件系统总览</li>
+ *   <li>公开路由：管理员/用户/Session 登录、注册、token 刷新、插件系统总览</li>
  *   <li>Admin 路由：管理员 RBAC + 插件管理 + 多租户 + 远程执行，使用 admin guard + 权限中间件</li>
  *   <li>User 路由：用户 RBAC + 插件执行，使用 api guard + 权限中间件</li>
+ *   <li>Session 路由：Session 登出与信息，使用 web guard（Session 驱动 + cookie 存储）</li>
  * </ul>
  * <p>
  * <b>控制器引用</b>：通过字符串 {@code "ControllerName::method"} 引用控制器方法
@@ -49,6 +50,9 @@ public class Api {
             api.post("/captcha/verify", "CaptchaController::verify");
 
             // ===== 公开路由（无需认证） =====
+            // Session 认证（web guard，cookie 存储）
+            api.post("/auth/session/login", "AuthController::sessionLogin");
+            // JWT 认证
             api.post("/auth/admin/login", "AuthController::adminLogin");
             api.post("/auth/user/register", "AuthController::register");
             api.post("/auth/user/login", "AuthController::userLogin");
@@ -203,6 +207,12 @@ public class Api {
                 user.post("/plugin/jar/run", "PluginRunController::runJar");
                 user.get("/plugin/jar/status", "PluginRunController::jarStatus");
             }).middleware("auth:api", "permission:api");
+
+            // ===== Session 路由（web guard，Session 驱动 + cookie 存储） =====
+            api.group(Map.of(), web -> {
+                web.post("/auth/session/logout", "AuthController::sessionLogout");
+                web.get("/auth/session/me", "AuthController::sessionMe");
+            }).middleware("auth:web");
         });
     }
 }

@@ -20,7 +20,12 @@ import java.util.Map;
 /**
  * 认证控制器，对齐 Laravel 的 {@code AuthController}。
  * <p>
- * 提供双 Guard 认证：admin guard（管理员）和 api guard（用户），均为 JWT 驱动。
+ * 提供三种 Guard 认证，展示认证驱动与 Session 存储分离的架构：
+ * <ul>
+ *   <li><b>web</b>：Session 驱动 + cookie 存储，适合传统 Web 页面（有状态，登录态存于 HttpSession）</li>
+ *   <li><b>api</b>：JWT 驱动，适合 API / SPA 场景（无状态，返回 token）</li>
+ *   <li><b>admin</b>：JWT 驱动，管理员场景（无状态，返回 token）</li>
+ * </ul>
  * 密码校验在应用层完成（Service / Controller），不在 provider / guard 中。
  */
 @Controller
@@ -29,7 +34,46 @@ public class AuthController implements Controllers {
     @Autowired
     private CaptchaService captchaService;
 
-    // ===== 管理员认证 =====
+    // ===== Session 认证（web guard，cookie 存储）=====
+
+    /**
+     * 用户 Session 登录（工号 + 密码），登入 web guard。
+     * <p>
+     * 与 JWT 登录不同，Session 登录不返回 token，登录态由 Servlet HttpSession 维护，
+     * 浏览器通过 JSESSIONID cookie 自动携带。适合传统 Web 页面场景。
+     */
+    public Response sessionLogin(Request request) {
+        String number = request.input("number");
+        String password = request.input("password");
+
+        User user = UserService.login(number, password);
+        Auth.guard("web").login(user);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("user", buildUserInfo(user));
+        result.put("message", "Session 登录成功");
+        return ResponseBuilder.json(result);
+    }
+
+    /**
+     * Session 登出（web guard），清除 HttpSession 中的登录态。
+     */
+    public Response sessionLogout(Request request) {
+        Auth.logout("web");
+        return ResponseBuilder.json(Map.of("message", "已退出 Session 登录"));
+    }
+
+    /**
+     * 获取当前 Session 登录用户（web guard）。
+     */
+    public Response sessionMe(Request request) {
+        User user = (User) Auth.guard("web").user();
+        if (user == null) {
+            return ResponseBuilder.error(401, "Unauthorized");
+        }
+        return ResponseBuilder.json(buildUserInfo(user));
+    }
+
+    // ===== 管理员认证（admin guard，JWT 驱动）=====
 
     /**
      * 管理员登录（用户名 + 密码 + 验证码），登入 admin guard，返回 JWT token。

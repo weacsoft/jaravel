@@ -129,7 +129,6 @@ jaravel:
     make:
       base-package: com.weacsoft.jaravel
       output-dir: src/main/java
-      migration-dir: migrations
 
   # 定时任务调度器
   schedule:
