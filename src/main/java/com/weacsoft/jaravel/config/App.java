@@ -17,6 +17,8 @@ import org.springframework.context.annotation.Import;
  *   <li>{@link ViewConfig} — 视图引擎（jblade BladeEngine）</li>
  *   <li>{@link DatabaseConfig} — 数据库（GaarasonDataSource + Druid）</li>
  *   <li>{@link WireConfig} — Wire 部分更新（Laravel Livewire 风格）</li>
+ *   <li>{@link AuthConfig} — 认证配置（守卫注册，对齐 config/auth.php）</li>
+ *   <li>{@link SessionConfig} — Session 存储配置（对齐 config/session.php）</li>
  * </ul>
  * <p>
  * <h3>通过 application.yml 控制的功能（SpringBoot 自动装配）</h3>

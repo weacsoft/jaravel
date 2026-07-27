@@ -25,6 +25,8 @@ jaravel/
 │   ├── JaravelApplication.java              # 应用入口
 │   ├── config/                              # 配置（类似 Laravel config/）
 │   │   ├── App.java                         # 中央配置，通过 @Import 显式控制功能启用
+│   │   ├── AuthConfig.java                  # 认证配置（Guard 注册：web/api/admin 三 Guard）
+│   │   ├── SessionConfig.java               # Session 存储配置（cookie/redis）
 │   │   ├── StaticResourceConfig.java        # 静态资源配置
 │   │   ├── view/
 │   │   │   └── ViewConfig.java              # 视图引擎配置（BladeEngine，支持预编译模式）
@@ -76,7 +78,6 @@ jaravel/
 │       │   ├── DatabaseSeedCommand.java     # db:seed 种子数据初始化
 │       │   └── ScheduleConfig.java          # 定时任务（插件清理）
 │       └── provider/
-│           ├── AuthServiceProvider.java     # 认证配置（admin + api 双 Guard）
 │           └── RouteServiceProvider.java   # 路由加载
 ├── src/main/resources/
 │   ├── application.yml
@@ -167,32 +168,31 @@ curl http://localhost:8080/api/plugin/overview
 
 ### 工厂模式架构
 
-认证系统采用工厂模式 + `support()` 方法匹配（对齐 database-all 多数据库支持），分两层：
+认证系统采用工厂模式 + `support()` 方法匹配（对齐 database-all 多数据库支持）。Guard 注册在 `config/AuthConfig.java` 中完成，Session 存储由 `config/SessionConfig.java` 单独配置，不再作为 Guard 的参数：
 
 | 层级 | 说明 | 可选值 | 匹配方式 |
 |------|------|--------|----------|
 | 认证驱动（driver） | 数据来源方式 | `session` / `jwt` | `AuthGuardDriver.support(driver)` |
-| Session 存储（session-store） | 仅 session 驱动使用 | `cookie` / `redis` | `SessionStore.support(store)` |
 
-- `session` 驱动：有状态，登录态存储在 Session 中（默认 cookie = Servlet HttpSession）
+- `session` 驱动：有状态，登录态存储在 Session 中（Session 存储类型由 `config/SessionConfig.java` 统一配置，可选 cookie / redis）
 - `jwt` 驱动：无状态，返回 token，适合 API / SPA 场景
 - 第三方模块只需实现接口并注册为 Spring Bean，`AuthAutoConfiguration` 自动收集并注册到 `AuthManager`
 
 ### 三 Guard 架构
 
-| Guard | 驱动 | Session 存储 | Provider | 凭证字段 | 用途 |
-|-------|------|-------------|----------|----------|------|
-| web | session | cookie | users | number | Web 页面认证（有状态） |
-| api | jwt | - | users | number | 用户 API 认证（无状态） |
-| admin | jwt | - | admins | username | 管理员认证（无状态） |
+| Guard | 驱动 | Provider | 凭证字段 | 用途 |
+|-------|------|----------|----------|------|
+| web | session | users | number | Web 页面认证（有状态） |
+| api | jwt | users | number | 用户 API 认证（无状态） |
+| admin | jwt | admins | username | 管理员认证（无状态） |
 
 ```java
-// AuthServiceProvider 注册三 Guard
+// config/AuthConfig.java 注册三 Guard
 authManager.registerProvider("users", new EloquentUserProvider<>(userModel, "number"));
 authManager.registerProvider("admins", new EloquentUserProvider<>(adminModel, "username"));
 
-// web 守卫：Session 驱动 + cookie 存储（默认）
-authManager.registerGuard("web", "session", "users", "cookie");
+// web 守卫：Session 驱动（Session 存储由 config/SessionConfig.java 单独配置）
+authManager.registerGuard("web", "session", "users");
 // api 守卫：JWT 驱动
 authManager.registerGuard("api", "jwt", "users");
 // admin 守卫：JWT 驱动
@@ -202,7 +202,7 @@ authManager.registerGuard("admin", "jwt", "admins");
 ### 路由保护
 
 ```java
-// Session 路由：web guard（Session 驱动 + cookie 存储）
+// Session 路由：web guard（Session 驱动）
 api.group(Map.of(), web -> {
     web.post("/auth/session/logout", "AuthController::sessionLogout");
     web.get("/auth/session/me", "AuthController::sessionMe");
