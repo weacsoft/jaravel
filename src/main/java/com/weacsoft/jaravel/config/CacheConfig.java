@@ -1,49 +1,41 @@
 package com.weacsoft.jaravel.config;
 
-import com.weacsoft.jaravel.vendor.cache.CacheManager;
 import com.weacsoft.jaravel.vendor.cache.CacheStore;
+import com.weacsoft.jaravel.vendor.cache.driver.ArrayCacheDriver;
+import com.weacsoft.jaravel.vendor.cache.driver.FileCacheDriver;
+import com.weacsoft.jaravel.vendor.cache.store.DefaultCacheStore;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
  * 缓存配置，对齐 Laravel 的 {@code config/cache.php}。
  * <p>
- * 采用<b>工厂模式 + 按需创建</b>（对齐 Laravel {@code CacheManager}）：
+ * 支持三种 Store 注册方式（优先级：Bean 声明 > 配置式 > 编程式）：
  * <ul>
- *   <li>缓存模块内置 array、file、database 驱动工厂，启动时自动注册</li>
- *   <li>CacheManager 根据 {@code jaravel.cache.stores} 配置按需创建 Store</li>
- *   <li>只有配置在 stores 中的 Store 才会被创建，驱动实例在创建 Store 时才实例化</li>
- *   <li>stores 为空时只创建 default-store 对应的默认 Store（默认 array）</li>
+ *   <li><b>配置式</b>：{@code application.yml} 的 {@code jaravel.cache.stores} 配置按需创建</li>
+ *   <li><b>Bean 声明式</b>：在此类中用 {@code @Bean} 声明 CacheStore</li>
+ *   <li><b>编程式</b>：通过 {@code CacheManager.addStore()} 手动注册</li>
  * </ul>
  *
- * <h3>配置式（推荐，对齐 Laravel stores 数组）</h3>
- * 在 {@code application.yml} 中配置即可，无需写 Java 代码：
- * <pre>
- * jaravel:
- *   cache:
- *     default-store: array
- *     prefix: jaravel
- *     stores:
- *       array:
- *         driver: array
- *       file:
- *         driver: file
- *         dir: /tmp/jaravel-cache
- *       database:
- *         driver: database
- *         table: jaravel_cache
- * </pre>
- * 只有 array、file、database 三个 Store 会被创建，其他驱动不会实例化。
+ * <h3>Bean 声明式规则</h3>
+ * <ul>
+ *   <li>{@code @Bean("name")} 返回 {@link CacheStore} → 注册为名为 "name" 的额外 store</li>
+ *   <li>{@code @Bean} 返回 {@link DefaultCacheStore}，方法名匹配 {@code default-store} → 默认 store</li>
+ * </ul>
+ * Bean 声明优先于配置式（同名时覆盖）。
  *
- * <h3>编程式注册（可选）</h3>
- * 如需注册自定义 Store，可在此类中注入 {@link CacheManager} 并调用 {@code addStore}：
+ * <h3>示例</h3>
  * <pre>
+ * // 额外 store：@Bean("file") 返回 CacheStore → store "file"
+ * &#64;Bean("file")
+ * public CacheStore fileStore() {
+ *     return new DefaultCacheStore(new FileCacheDriver("/tmp/cache"), "jaravel");
+ * }
+ *
+ * // 默认 store：@Bean 返回 DefaultCacheStore，方法名 "array" 匹配 default-store="array"
  * &#64;Bean
- * public ApplicationRunner customCacheStore(CacheManager cacheManager) {
- *     return args -> {
- *         // 注册自定义 Store（优先于配置式，同名时覆盖）
- *         CacheStore myStore = new DefaultCacheStore(new MyCacheDriver(), "jaravel");
- *         cacheManager.addStore("myStore", myStore);
- *     };
+ * public DefaultCacheStore array() {
+ *     return new DefaultCacheStore(new ArrayCacheDriver(), "jaravel");
  * }
  * </pre>
  *
@@ -51,31 +43,30 @@ import org.springframework.context.annotation.Configuration;
  * <pre>
  * Cache::put("key", "value", 60);               // 使用默认 store（array）
  * Cache::store("file").put("key", "value", 0);   // 使用 file store
- * Cache::store("database").put("key", "value", 0); // 使用 database store
  * </pre>
- *
- * <h3>各模块独立指定 Store</h3>
- * 各模块通过独立配置项指定使用的 cache store，空串表示使用 cache 模块的默认 store：
- * <ul>
- *   <li>{@code jaravel.wechat.cache-store=file} — wechat 模块使用 file store</li>
- *   <li>{@code jaravel.model-cache.store=database} — model-cache 模块使用 database store</li>
- *   <li>{@code jaravel.jwt.blacklist-store=} — jwt 模块使用默认 store</li>
- * </ul>
- * 注意：指定的 store 必须在 {@code stores} 中配置或通过编程式注册，否则会抛出
- * {@code "未注册的缓存 store"} 异常。
  */
 @Configuration
 public class CacheConfig {
-    // 默认无需任何代码：CacheAutoConfiguration 会根据 application.yml 的
-    // jaravel.cache.stores 配置按需创建 Store。
-    //
-    // 如需编程式注册自定义 Store，取消以下注释：
-    //
+
+    // ===== Bean 声明式 Store（演示）=====
+    // 如果使用 Bean 声明式，取消下方注释即可覆盖配置式的同名 store。
+    // 配置式（application.yml stores）和 Bean 声明式可共存，Bean 优先。
+
+    // /**
+    //  * 额外 store：file 缓存（跨重启持久化）。
+    //  * @Bean("file") 返回 CacheStore → 注册为 store "file"，覆盖配置式同名 store。
+    //  */
+    // @Bean("file")
+    // public CacheStore fileStore() {
+    //     return new DefaultCacheStore(new FileCacheDriver(), "jaravel");
+    // }
+
+    // /**
+    //  * 默认 store：array 内存缓存。
+    //  * @Bean 返回 DefaultCacheStore，方法名 "array" 匹配 default-store="array" → 默认 store。
+    //  */
     // @Bean
-    // public ApplicationRunner customCacheStore(CacheManager cacheManager) {
-    //     return args -> {
-    //         CacheStore myStore = new DefaultCacheStore(new MyCacheDriver(), "jaravel");
-    //         cacheManager.addStore("myStore", myStore);
-    //     };
+    // public DefaultCacheStore array() {
+    //     return new DefaultCacheStore(new ArrayCacheDriver(), "jaravel");
     // }
 }
