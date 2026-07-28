@@ -4,7 +4,6 @@ import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
 import com.weacsoft.jaravel.vendor.http.controller.ControllerRegistry;
 import com.weacsoft.jaravel.vendor.route.Route;
 import com.weacsoft.jaravel.vendor.route.Router;
-import com.weacsoft.jaravel.vendor.route.Routes;
 import com.weacsoft.jaravel.routes.Api;
 import com.weacsoft.jaravel.routes.Web;
 import com.weacsoft.jaravel.app.http.middleware.AppTrimStrings;
@@ -32,8 +31,8 @@ import java.util.Map;
  * Route::middleware('web')->group(base_path('routes/web.php'));
  *
  * // Jaravel:
- * Routes.group(Map.of(Route.Group.MIDDLEWARE, new String[]{}), Api::register);
- * Routes.group(Map.of(Route.Group.MIDDLEWARE, new String[]{}), Web::register);
+ * Route.group(Map.of(Route.Group.MIDDLEWARE, new String[]{}), Api::register);
+ * Route.group(Map.of(Route.Group.MIDDLEWARE, new String[]{}), Web::register);
  * </pre>
  * {@link Api} 和 {@link Web} 是纯静态类（非 Spring Bean），通过方法引用调用。
  * 每组的中间件数组即使为空也显式写出，方便后续扩展（如添加 {@code "throttle:api"}）。
@@ -41,8 +40,8 @@ import java.util.Map;
  * <b>全局中间件</b>（对齐 Laravel Kernel {@code $middleware}）直接在根 {@link Router} 上声明，
  * 所有路由通过 {@code Router.getAllMiddlewares()} 继承。
  * <p>
- * <b>静态门面</b>（对齐 Laravel {@code Route::get()}）：通过 {@link Routes#setRootRouter(Router)}
- * 初始化后，可在任意位置使用 {@code Routes.get()}、{@code Routes.group()} 等静态方法注册路由，
+ * <b>静态门面</b>（对齐 Laravel {@code Route::get()}）：通过 {@link Route#setRootRouter(Router)}
+ * 初始化后，可在任意位置使用 {@code Route.get()}、{@code Route.group()} 等静态方法注册路由，
  * 无需传递 Router 实例。路由组闭包为无参 {@code Runnable}，系统通过 ThreadLocal 自动计算层级。
  */
 @Configuration
@@ -59,8 +58,8 @@ public class RouteServiceProvider extends ServiceProvider {
         Router baseRouter = new Router();
 
         // 初始化静态门面（对齐 Laravel Route Facade）
-        // 初始化后可在 Api、Web 等路由定义类中使用 Routes.get()、Routes.group() 等静态方法
-        Routes.setRootRouter(baseRouter);
+        // 初始化后可在 Api、Web 等路由定义类中使用 Route.get()、Route.group() 等静态方法
+        Route.setRootRouter(baseRouter);
 
         // ===== 全局中间件（对齐 Laravel Kernel $middleware，所有路由继承） =====
         baseRouter.middleware(AppTrimStrings.class)
@@ -69,19 +68,19 @@ public class RouteServiceProvider extends ServiceProvider {
         // ===== API 路由组（对齐 Laravel Route::middleware('api')->group(base_path('routes/api.php'))） =====
         // Api 是纯静态类，通过方法引用调用，无需 Spring 容器获取
         // 中间件数组即使为空也显式写出，方便后续扩展（如添加 "throttle:api"）
-        Routes.group(Map.of(
+        Route.group(Map.of(
                 Route.Group.MIDDLEWARE, new String[]{}
         ), Api::register);
 
         // ===== Web 路由组（对齐 Laravel Route::middleware('web')->group(base_path('routes/web.php'))） =====
         // Web 是纯静态类，通过方法引用调用，无需 Spring 容器获取
         // 中间件数组即使为空也显式写出，方便后续扩展（如添加 "VerifyCsrfToken"、"EncryptCookies"）
-        Routes.group(Map.of(
+        Route.group(Map.of(
                 Route.Group.MIDDLEWARE, new String[]{}
         ), Web::register);
 
         // 清理 ThreadLocal 上下文（防止线程池复用时泄漏）
-        Routes.clearContext();
+        Route.clearContext();
         return baseRouter;
     }
 }
