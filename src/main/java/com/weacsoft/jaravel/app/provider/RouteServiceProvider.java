@@ -77,11 +77,11 @@ public class RouteServiceProvider extends ServiceProvider {
         // });
         // baseRouter.middleware(new ConvertEmptyStringsToNull()); // 使用默认排除列表
 
-        // 加载 API 路由（控制器通过字符串引用，无需传入 context）
-        // Api.register() 内部可使用 Routes.get() 静态方法或 router.get() 实例方法，两者等效
-        context.getBean(Api.class).register(baseRouter);
+        // 加载 API 路由（使用 Routes 静态门面，无需传递 Router 实例）
+        // Api.register() 内部使用 Routes.get()、Routes.group() 等静态方法
+        context.getBean(Api.class).register();
         // 加载 Web 路由
-        context.getBean(Web.class).register(baseRouter);
+        context.getBean(Web.class).register();
 
         // 清理 ThreadLocal 上下文（防止线程池复用时泄漏）
         Routes.clearContext();

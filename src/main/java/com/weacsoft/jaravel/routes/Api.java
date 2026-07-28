@@ -1,7 +1,6 @@
 package com.weacsoft.jaravel.routes;
 
 import com.weacsoft.jaravel.vendor.route.Route;
-import com.weacsoft.jaravel.vendor.route.Router;
 import com.weacsoft.jaravel.vendor.route.Routes;
 import org.springframework.stereotype.Component;
 
@@ -9,6 +8,9 @@ import java.util.Map;
 
 /**
  * API 路由定义，对齐 Laravel 的 {@code routes/api.php}。
+ * <p>
+ * 全部使用 {@link Routes} 静态门面注册路由（对齐 Laravel {@code Route::get()} 静态调用风格），
+ * 无需传递 {@code Router} 实例。路由组闭包为无参 {@code Runnable}，系统通过 ThreadLocal 自动计算层级。
  * <p>
  * 路由分为四组：
  * <ul>
@@ -30,216 +32,208 @@ import java.util.Map;
  * </ul>
  * 中间件标注 {@code @MiddlewareAlias} 后由 SpringBoot classpath 扫描自动注册（非 Spring Bean），无需手动 new。
  * <p>
- * <b>分组中间件</b>：通过 {@code Route.Group.MIDDLEWARE} 在 group 参数中直接声明中间件，
- * 无需在闭包后链式调用 {@code .middleware()}。支持单个别名（{@code String}）或多个别名（{@code String[]}）。
- * <p>
- * <b>静态门面</b>（可选）：{@link Routes} 提供 Laravel 风格的静态 API，无需传递 Router 实例：
- * <pre>
- * // 在 RouteServiceProvider 中调用 Routes.setRootRouter(baseRouter) 后：
- * Routes.group(Map.of(Route.Group.PREFIX, "api"), () -> {
- *     Routes.get("/users", "UserController::list").name("users.index");
- *
- *     Routes.group(Map.of(
- *         Route.Group.MIDDLEWARE, new String[]{"auth:admin", "permission:admin"}
- *     ), () -> {
- *         Routes.get("/home", "HomeController::index");
- *     });
- * });
- * // 或使用流式构建器：
- * Routes.middleware("auth:admin", "permission:admin").prefix("admin").group(() -> {
- *     Routes.get("/home", "HomeController::index");
- * });
- * </pre>
+ * <b>两种分组写法演示</b>：
+ * <ul>
+ *   <li><b>用法一</b>（Map 参数式）：{@code Routes.group(Map.of(Route.Group.PREFIX, "api"), () -> { ... })}
+ *       — 对齐 Laravel {@code Route::group(['prefix' => 'api'], function () { ... })}</li>
+ *   <li><b>用法二</b>（流式构建器）：{@code Routes.middleware("auth:api").prefix("api").group(() -> { ... })}
+ *       — 对齐 Laravel {@code Route::middleware('api')->prefix('api')->group(function () { ... })}</li>
+ * </ul>
  */
 @Component
 public class Api {
 
-    public void register(Router router) {
+    /**
+     * 注册 API 路由。使用 {@link Routes} 静态门面，无需传递 Router 实例。
+     * <p>
+     * 前提：{@code RouteServiceProvider} 中已调用 {@code Routes.setRootRouter(baseRouter)} 初始化静态门面。
+     */
+    public void register() {
         // 控制器通过字符串引用（对齐 Laravel Route::get('/users', 'UserController@index')），
         // 无需 context.getBean() 获取控制器实例：
         //   "AuthController::adminLogin" -> 从 ControllerRegistry 查找 AuthController，反射调用 adminLogin(Request)
         // 控制器由 SpringBoot 自动扫描注册，路由在首次请求时延迟解析。
 
         // ===== 页面路由（jblade 模板渲染，无需认证） =====
-        router.get("/", "PageController::index");
-        router.get("/admin", "PageController::admin");
-        router.get("/user", "PageController::user");
+        Routes.get("/", "PageController::index");
+        Routes.get("/admin", "PageController::admin");
+        Routes.get("/user", "PageController::user");
 
-        router.group(Map.of(Route.Group.PREFIX, "api"), api -> {
+        // ===== 用法一：Map 参数式分组（对齐 Laravel Route::group(['prefix' => 'api'], ...)） =====
+        Routes.group(Map.of(Route.Group.PREFIX, "api"), () -> {
             // ===== 验证码接口（无需认证） =====
-            api.get("/captcha/generate", "CaptchaController::generate");
-            api.post("/captcha/generate", "CaptchaController::generate");
-            api.post("/captcha/verify", "CaptchaController::verify");
+            Routes.get("/captcha/generate", "CaptchaController::generate");
+            Routes.post("/captcha/generate", "CaptchaController::generate");
+            Routes.post("/captcha/verify", "CaptchaController::verify");
 
             // ===== 公开路由（无需认证） =====
             // Session 认证（web guard，cookie 存储）
-            api.post("/auth/session/login", "AuthController::sessionLogin");
+            Routes.post("/auth/session/login", "AuthController::sessionLogin");
             // JWT 认证
-            api.post("/auth/admin/login", "AuthController::adminLogin");
-            api.post("/auth/user/register", "AuthController::register");
-            api.post("/auth/user/login", "AuthController::userLogin");
-            api.post("/auth/refresh", "AuthController::refresh");
-            api.get("/plugin/overview", "PluginRunController::overview");
+            Routes.post("/auth/admin/login", "AuthController::adminLogin");
+            Routes.post("/auth/user/register", "AuthController::register");
+            Routes.post("/auth/user/login", "AuthController::userLogin");
+            Routes.post("/auth/refresh", "AuthController::refresh");
+            Routes.get("/plugin/overview", "PluginRunController::overview");
 
             // ===== 事件与缓存演示路由（无需认证） =====
-            api.get("/demo/cache", "EventCacheDemoController::demoMultiCache");
-            api.get("/demo/event/user", "EventCacheDemoController::demoUserEvent");
-            api.get("/demo/event/order", "EventCacheDemoController::demoOrderEvent");
+            Routes.get("/demo/cache", "EventCacheDemoController::demoMultiCache");
+            Routes.get("/demo/event/user", "EventCacheDemoController::demoUserEvent");
+            Routes.get("/demo/event/order", "EventCacheDemoController::demoOrderEvent");
 
-            // ===== Admin 路由（admin guard + admin 路由权限中间件） =====
-            api.group(Map.of(
+            // ===== 用法一（嵌套）：Map 参数式分组 — Admin 路由 =====
+            // 对齐 Laravel Route::group(['middleware' => ['auth:admin', 'permission:admin']], ...)
+            Routes.group(Map.of(
                     Route.Group.MIDDLEWARE, new String[]{"auth:admin", "permission:admin"}
-            ), admin -> {
-                admin.post("/auth/admin/logout", "AuthController::adminLogout");
-                admin.get("/auth/admin/me", "AuthController::adminMe");
+            ), () -> {
+                Routes.post("/auth/admin/logout", "AuthController::adminLogout");
+                Routes.get("/auth/admin/me", "AuthController::adminMe");
 
                 // Admin RBAC 管理端点
                 // 管理员 CRUD
-                admin.get("/rbac/admins", "AdminRbacController::listAdmins");
-                admin.post("/rbac/admins", "AdminRbacController::createAdmin");
-                admin.get("/rbac/admins/{id}", "AdminRbacController::showAdmin");
-                admin.put("/rbac/admins/{id}", "AdminRbacController::updateAdmin");
-                admin.delete("/rbac/admins/{id}", "AdminRbacController::deleteAdmin");
+                Routes.get("/rbac/admins", "AdminRbacController::listAdmins");
+                Routes.post("/rbac/admins", "AdminRbacController::createAdmin");
+                Routes.get("/rbac/admins/{id}", "AdminRbacController::showAdmin");
+                Routes.put("/rbac/admins/{id}", "AdminRbacController::updateAdmin");
+                Routes.delete("/rbac/admins/{id}", "AdminRbacController::deleteAdmin");
 
                 // 角色 CRUD
-                admin.get("/rbac/roles", "AdminRbacController::listRoles");
-                admin.post("/rbac/roles", "AdminRbacController::createRole");
-                admin.get("/rbac/roles/{id}", "AdminRbacController::showRole");
-                admin.put("/rbac/roles/{id}", "AdminRbacController::updateRole");
-                admin.delete("/rbac/roles/{id}", "AdminRbacController::deleteRole");
+                Routes.get("/rbac/roles", "AdminRbacController::listRoles");
+                Routes.post("/rbac/roles", "AdminRbacController::createRole");
+                Routes.get("/rbac/roles/{id}", "AdminRbacController::showRole");
+                Routes.put("/rbac/roles/{id}", "AdminRbacController::updateRole");
+                Routes.delete("/rbac/roles/{id}", "AdminRbacController::deleteRole");
 
                 // 权限 CRUD
-                admin.get("/rbac/permissions", "AdminRbacController::listPermissions");
-                admin.post("/rbac/permissions", "AdminRbacController::createPermission");
-                admin.get("/rbac/permissions/{id}", "AdminRbacController::showPermission");
-                admin.put("/rbac/permissions/{id}", "AdminRbacController::updatePermission");
-                admin.delete("/rbac/permissions/{id}", "AdminRbacController::deletePermission");
+                Routes.get("/rbac/permissions", "AdminRbacController::listPermissions");
+                Routes.post("/rbac/permissions", "AdminRbacController::createPermission");
+                Routes.get("/rbac/permissions/{id}", "AdminRbacController::showPermission");
+                Routes.put("/rbac/permissions/{id}", "AdminRbacController::updatePermission");
+                Routes.delete("/rbac/permissions/{id}", "AdminRbacController::deletePermission");
 
                 // 管理员 ↔ 角色
-                admin.get("/rbac/admins/{id}/roles", "AdminRbacController::adminRolesAll");
-                admin.get("/rbac/admins/{id}/roles/assigned", "AdminRbacController::adminRolesAssigned");
-                admin.post("/rbac/admins/{id}/roles", "AdminRbacController::assignRole");
-                admin.delete("/rbac/admins/{id}/roles/{roleId}", "AdminRbacController::removeRole");
+                Routes.get("/rbac/admins/{id}/roles", "AdminRbacController::adminRolesAll");
+                Routes.get("/rbac/admins/{id}/roles/assigned", "AdminRbacController::adminRolesAssigned");
+                Routes.post("/rbac/admins/{id}/roles", "AdminRbacController::assignRole");
+                Routes.delete("/rbac/admins/{id}/roles/{roleId}", "AdminRbacController::removeRole");
 
                 // 角色 ↔ 权限
-                admin.get("/rbac/roles/{id}/permissions", "AdminRbacController::rolePermissionsAll");
-                admin.get("/rbac/roles/{id}/permissions/assigned", "AdminRbacController::rolePermissionsAssigned");
-                admin.post("/rbac/roles/{id}/permissions", "AdminRbacController::assignPermission");
-                admin.delete("/rbac/roles/{id}/permissions/{permissionId}", "AdminRbacController::removePermission");
+                Routes.get("/rbac/roles/{id}/permissions", "AdminRbacController::rolePermissionsAll");
+                Routes.get("/rbac/roles/{id}/permissions/assigned", "AdminRbacController::rolePermissionsAssigned");
+                Routes.post("/rbac/roles/{id}/permissions", "AdminRbacController::assignPermission");
+                Routes.delete("/rbac/roles/{id}/permissions/{permissionId}", "AdminRbacController::removePermission");
 
                 // 管理员 ↔ 权限（树形祖先授权 + 溯源）
-                admin.get("/rbac/admins/{id}/permissions", "AdminRbacController::adminPermissionsAll");
-                admin.get("/rbac/admins/{id}/permissions/assigned", "AdminRbacController::adminPermissionsAssigned");
-                admin.get("/rbac/admins/{id}/check-permission/{permissionId}", "AdminRbacController::checkPermission");
-                admin.get("/rbac/admins/{id}/check-role/{roleId}", "AdminRbacController::checkRole");
-                admin.get("/rbac/admins/{id}/permissions/{permissionId}/grantors", "AdminRbacController::permissionGrantors");
+                Routes.get("/rbac/admins/{id}/permissions", "AdminRbacController::adminPermissionsAll");
+                Routes.get("/rbac/admins/{id}/permissions/assigned", "AdminRbacController::adminPermissionsAssigned");
+                Routes.get("/rbac/admins/{id}/check-permission/{permissionId}", "AdminRbacController::checkPermission");
+                Routes.get("/rbac/admins/{id}/check-role/{roleId}", "AdminRbacController::checkRole");
+                Routes.get("/rbac/admins/{id}/permissions/{permissionId}/grantors", "AdminRbacController::permissionGrantors");
 
                 // 用户管理（Admin 管理平台用户）
-                admin.get("/user-rbac/users", "UserRbacController::listUsers");
-                admin.post("/user-rbac/users", "UserRbacController::createUser");
-                admin.get("/user-rbac/users/{id}", "UserRbacController::showUser");
-                admin.put("/user-rbac/users/{id}", "UserRbacController::updateUser");
-                admin.delete("/user-rbac/users/{id}", "UserRbacController::deleteUser");
+                Routes.get("/user-rbac/users", "UserRbacController::listUsers");
+                Routes.post("/user-rbac/users", "UserRbacController::createUser");
+                Routes.get("/user-rbac/users/{id}", "UserRbacController::showUser");
+                Routes.put("/user-rbac/users/{id}", "UserRbacController::updateUser");
+                Routes.delete("/user-rbac/users/{id}", "UserRbacController::deleteUser");
 
                 // 用户角色 CRUD
-                admin.get("/user-rbac/roles", "UserRbacController::listRoles");
-                admin.post("/user-rbac/roles", "UserRbacController::createRole");
-                admin.get("/user-rbac/roles/{id}", "UserRbacController::showRole");
-                admin.put("/user-rbac/roles/{id}", "UserRbacController::updateRole");
-                admin.delete("/user-rbac/roles/{id}", "UserRbacController::deleteRole");
+                Routes.get("/user-rbac/roles", "UserRbacController::listRoles");
+                Routes.post("/user-rbac/roles", "UserRbacController::createRole");
+                Routes.get("/user-rbac/roles/{id}", "UserRbacController::showRole");
+                Routes.put("/user-rbac/roles/{id}", "UserRbacController::updateRole");
+                Routes.delete("/user-rbac/roles/{id}", "UserRbacController::deleteRole");
 
                 // 用户权限 CRUD
-                admin.get("/user-rbac/permissions", "UserRbacController::listPermissions");
-                admin.post("/user-rbac/permissions", "UserRbacController::createPermission");
-                admin.get("/user-rbac/permissions/{id}", "UserRbacController::showPermission");
-                admin.put("/user-rbac/permissions/{id}", "UserRbacController::updatePermission");
-                admin.delete("/user-rbac/permissions/{id}", "UserRbacController::deletePermission");
+                Routes.get("/user-rbac/permissions", "UserRbacController::listPermissions");
+                Routes.post("/user-rbac/permissions", "UserRbacController::createPermission");
+                Routes.get("/user-rbac/permissions/{id}", "UserRbacController::showPermission");
+                Routes.put("/user-rbac/permissions/{id}", "UserRbacController::updatePermission");
+                Routes.delete("/user-rbac/permissions/{id}", "UserRbacController::deletePermission");
 
                 // 用户 ↔ 角色
-                admin.get("/user-rbac/users/{id}/roles", "UserRbacController::userRolesAll");
-                admin.get("/user-rbac/users/{id}/roles/assigned", "UserRbacController::userRolesAssigned");
-                admin.post("/user-rbac/users/{id}/roles", "UserRbacController::assignRole");
-                admin.delete("/user-rbac/users/{id}/roles/{roleId}", "UserRbacController::removeRole");
+                Routes.get("/user-rbac/users/{id}/roles", "UserRbacController::userRolesAll");
+                Routes.get("/user-rbac/users/{id}/roles/assigned", "UserRbacController::userRolesAssigned");
+                Routes.post("/user-rbac/users/{id}/roles", "UserRbacController::assignRole");
+                Routes.delete("/user-rbac/users/{id}/roles/{roleId}", "UserRbacController::removeRole");
 
                 // 角色 ↔ 权限
-                admin.get("/user-rbac/roles/{id}/permissions", "UserRbacController::rolePermissionsAll");
-                admin.get("/user-rbac/roles/{id}/permissions/assigned", "UserRbacController::rolePermissionsAssigned");
-                admin.post("/user-rbac/roles/{id}/permissions", "UserRbacController::assignPermission");
-                admin.delete("/user-rbac/roles/{id}/permissions/{permissionId}", "UserRbacController::removePermission");
+                Routes.get("/user-rbac/roles/{id}/permissions", "UserRbacController::rolePermissionsAll");
+                Routes.get("/user-rbac/roles/{id}/permissions/assigned", "UserRbacController::rolePermissionsAssigned");
+                Routes.post("/user-rbac/roles/{id}/permissions", "UserRbacController::assignPermission");
+                Routes.delete("/user-rbac/roles/{id}/permissions/{permissionId}", "UserRbacController::removePermission");
 
                 // 用户 ↔ 权限（树形 + 路由 + 溯源）
-                admin.get("/user-rbac/users/{id}/permissions", "UserRbacController::userPermissionsAll");
-                admin.get("/user-rbac/users/{id}/permissions/assigned", "UserRbacController::userPermissionsAssigned");
-                admin.get("/user-rbac/users/{id}/check-permission/{permissionId}", "UserRbacController::checkPermission");
-                admin.get("/user-rbac/users/{id}/check-role/{roleId}", "UserRbacController::checkRole");
-                admin.get("/user-rbac/users/{id}/check-route", "UserRbacController::checkRoute");
-                admin.get("/user-rbac/users/{id}/accessible-routes", "UserRbacController::accessibleRoutes");
-                admin.get("/user-rbac/users/{id}/permissions/{permissionId}/grantors", "UserRbacController::permissionGrantors");
+                Routes.get("/user-rbac/users/{id}/permissions", "UserRbacController::userPermissionsAll");
+                Routes.get("/user-rbac/users/{id}/permissions/assigned", "UserRbacController::userPermissionsAssigned");
+                Routes.get("/user-rbac/users/{id}/check-permission/{permissionId}", "UserRbacController::checkPermission");
+                Routes.get("/user-rbac/users/{id}/check-role/{roleId}", "UserRbacController::checkRole");
+                Routes.get("/user-rbac/users/{id}/check-route", "UserRbacController::checkRoute");
+                Routes.get("/user-rbac/users/{id}/accessible-routes", "UserRbacController::accessibleRoutes");
+                Routes.get("/user-rbac/users/{id}/permissions/{permissionId}/grantors", "UserRbacController::permissionGrantors");
 
                 // Jar 插件管理
-                admin.get("/plugins/jar", "PluginController::listJarPlugins");
-                admin.post("/plugins/jar/upload", "PluginController::uploadJarPlugin");
-                admin.post("/plugins/jar/{pluginId}/enable", "PluginController::enableJarPlugin");
-                admin.post("/plugins/jar/{pluginId}/disable", "PluginController::disableJarPlugin");
-                admin.post("/plugins/jar/{pluginId}/routes", "PluginController::registerRoute");
-                admin.delete("/plugins/jar/{pluginId}/routes", "PluginController::unregisterRoute");
-                admin.get("/plugins/jar/{pluginId}/available-routes", "PluginController::listAvailableJarRoutes");
-                admin.post("/plugins/jar/{pluginId}/available-routes/register", "PluginController::registerAvailableJarRoute");
+                Routes.get("/plugins/jar", "PluginController::listJarPlugins");
+                Routes.post("/plugins/jar/upload", "PluginController::uploadJarPlugin");
+                Routes.post("/plugins/jar/{pluginId}/enable", "PluginController::enableJarPlugin");
+                Routes.post("/plugins/jar/{pluginId}/disable", "PluginController::disableJarPlugin");
+                Routes.post("/plugins/jar/{pluginId}/routes", "PluginController::registerRoute");
+                Routes.delete("/plugins/jar/{pluginId}/routes", "PluginController::unregisterRoute");
+                Routes.get("/plugins/jar/{pluginId}/available-routes", "PluginController::listAvailableJarRoutes");
+                Routes.post("/plugins/jar/{pluginId}/available-routes/register", "PluginController::registerAvailableJarRoute");
 
                 // Java 文件插件管理
-                admin.get("/plugins/java", "PluginController::listJavaPlugins");
-                admin.post("/plugins/java/register", "PluginController::registerJavaPlugin");
-                admin.post("/plugins/java/{pluginId}/reload", "PluginController::reloadJavaPlugin");
-                admin.post("/plugins/java/reload-all", "PluginController::reloadAllChanged");
-                admin.post("/plugins/java/{pluginId}/disable", "PluginController::disableJavaPlugin");
-                admin.get("/plugins/java/{pluginId}/available-routes", "PluginController::listAvailableJavaRoutes");
-                admin.post("/plugins/java/{pluginId}/available-routes/register", "PluginController::registerAvailableJavaRoute");
+                Routes.get("/plugins/java", "PluginController::listJavaPlugins");
+                Routes.post("/plugins/java/register", "PluginController::registerJavaPlugin");
+                Routes.post("/plugins/java/{pluginId}/reload", "PluginController::reloadJavaPlugin");
+                Routes.post("/plugins/java/reload-all", "PluginController::reloadAllChanged");
+                Routes.post("/plugins/java/{pluginId}/disable", "PluginController::disableJavaPlugin");
+                Routes.get("/plugins/java/{pluginId}/available-routes", "PluginController::listAvailableJavaRoutes");
+                Routes.post("/plugins/java/{pluginId}/available-routes/register", "PluginController::registerAvailableJavaRoute");
 
                 // 多租户插件管理
-                admin.get("/multi-tenant/status", "TenantController::status");
-                admin.get("/multi-tenant/naming-demo", "TenantController::namingDemo");
-                admin.get("/multi-tenant/tenants/{tenantId}/plugins", "TenantController::listByTenant");
-                admin.post("/multi-tenant/tenants/{tenantId}/plugins", "TenantController::registerForTenant");
-                admin.post("/multi-tenant/tenants/{tenantId}/upload", "TenantController::uploadAndRegister");
-                admin.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/enable", "TenantController::enableForTenant");
-                admin.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/disable", "TenantController::disableForTenant");
+                Routes.get("/multi-tenant/status", "TenantController::status");
+                Routes.get("/multi-tenant/naming-demo", "TenantController::namingDemo");
+                Routes.get("/multi-tenant/tenants/{tenantId}/plugins", "TenantController::listByTenant");
+                Routes.post("/multi-tenant/tenants/{tenantId}/plugins", "TenantController::registerForTenant");
+                Routes.post("/multi-tenant/tenants/{tenantId}/upload", "TenantController::uploadAndRegister");
+                Routes.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/enable", "TenantController::enableForTenant");
+                Routes.post("/multi-tenant/tenants/{tenantId}/plugins/{pluginId}/disable", "TenantController::disableForTenant");
 
                 // 共享接口管理（全手动指定，反射调用）
-                admin.post("/multi-tenant/shared-interfaces/register", "TenantController::registerSharedInterface");
-                admin.post("/multi-tenant/shared-interfaces/{name}/invoke", "TenantController::invokeSharedInterface");
-                admin.get("/multi-tenant/shared-interfaces", "TenantController::listSharedInterfaces");
+                Routes.post("/multi-tenant/shared-interfaces/register", "TenantController::registerSharedInterface");
+                Routes.post("/multi-tenant/shared-interfaces/{name}/invoke", "TenantController::invokeSharedInterface");
+                Routes.get("/multi-tenant/shared-interfaces", "TenantController::listSharedInterfaces");
 
                 // 远程插件执行管理
-                admin.get("/remote/status", "RemoteController::status");
-                admin.get("/remote/sub-servers", "RemoteController::listSubServers");
-                admin.post("/remote/sub-servers", "RemoteController::registerSubServer");
-                admin.delete("/remote/sub-servers/{subServerId}", "RemoteController::unregisterSubServer");
-                admin.post("/remote/sub-servers/{subServerId}/connect", "RemoteController::connectSubServer");
-                admin.post("/remote/sub-servers/{subServerId}/disconnect", "RemoteController::disconnectSubServer");
+                Routes.get("/remote/status", "RemoteController::status");
+                Routes.get("/remote/sub-servers", "RemoteController::listSubServers");
+                Routes.post("/remote/sub-servers", "RemoteController::registerSubServer");
+                Routes.delete("/remote/sub-servers/{subServerId}", "RemoteController::unregisterSubServer");
+                Routes.post("/remote/sub-servers/{subServerId}/connect", "RemoteController::connectSubServer");
+                Routes.post("/remote/sub-servers/{subServerId}/disconnect", "RemoteController::disconnectSubServer");
             });
 
-            // ===== User 路由（api guard + user 路由权限中间件） =====
-            api.group(Map.of(
-                    Route.Group.MIDDLEWARE, new String[]{"auth:api", "permission:api"}
-            ), user -> {
-                user.post("/auth/user/logout", "AuthController::logout");
-                user.get("/auth/user/me", "AuthController::me");
-                user.get("/users", "UserController::list");
-                user.get("/users/{id}", "UserController::show");
+            // ===== 用法二：流式构建器分组 — User 路由 =====
+            // 对齐 Laravel Route::middleware('auth:api', 'permission:api')->group(function () { ... })
+            Routes.middleware("auth:api", "permission:api").group(() -> {
+                Routes.post("/auth/user/logout", "AuthController::logout");
+                Routes.get("/auth/user/me", "AuthController::me");
+                Routes.get("/users", "UserController::list");
+                Routes.get("/users/{id}", "UserController::show");
 
                 // 插件执行端点
-                user.post("/plugin/java/run", "PluginRunController::runJava");
-                user.get("/plugin/java/status", "PluginRunController::javaStatus");
-                user.post("/plugin/jar/run", "PluginRunController::runJar");
-                user.get("/plugin/jar/status", "PluginRunController::jarStatus");
-            }).middleware("auth:api", "permission:api");
+                Routes.post("/plugin/java/run", "PluginRunController::runJava");
+                Routes.get("/plugin/java/status", "PluginRunController::javaStatus");
+                Routes.post("/plugin/jar/run", "PluginRunController::runJar");
+                Routes.get("/plugin/jar/status", "PluginRunController::jarStatus");
+            });
 
-            // ===== Session 路由（web guard，Session 驱动 + cookie 存储） =====
-            api.group(Map.of(
-                    Route.Group.MIDDLEWARE, "auth:web"
-            ), web -> {
-                web.post("/auth/session/logout", "AuthController::sessionLogout");
-                web.get("/auth/session/me", "AuthController::sessionMe");
+            // ===== 用法二（单个中间件）：流式构建器分组 — Session 路由 =====
+            // 对齐 Laravel Route::middleware('auth:web')->group(function () { ... })
+            Routes.middleware("auth:web").group(() -> {
+                Routes.post("/auth/session/logout", "AuthController::sessionLogout");
+                Routes.get("/auth/session/me", "AuthController::sessionMe");
             });
         });
     }
