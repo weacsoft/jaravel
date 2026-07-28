@@ -2,22 +2,24 @@ package com.weacsoft.jaravel.config;
 
 import com.weacsoft.jaravel.app.model.User;
 import com.weacsoft.jaravel.app.model.admin.Admin;
+import com.weacsoft.jaravel.vendor.auth.RegisterGuard;
+import com.weacsoft.jaravel.vendor.auth.RegisterProvider;
 import com.weacsoft.jaravel.vendor.auth.contract.GuardDefinition;
 import com.weacsoft.jaravel.vendor.auth.contract.UserProvider;
 import com.weacsoft.jaravel.vendor.database.EloquentUserProvider;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
  * 认证配置（对齐 Laravel 的 {@code config/auth.php}）。
  * <p>
- * 纯 {@code @Bean} 声明式配置，无构造方法副作用：
+ * 使用注解声明式注册（推荐），替代 {@code @Bean} 方式（避免 bean name 冲突）：
  * <ul>
- *   <li>{@code @Bean("users")} / {@code @Bean("admins")} — 声明 UserProvider，bean name 即 provider name</li>
- *   <li>{@code @Bean("web")} / {@code @Bean("api")} / {@code @Bean("admin")} — 声明 GuardDefinition，bean name 即 guard name</li>
+ *   <li>{@code @RegisterProvider("users")} — 声明 UserProvider，注解 value 即 provider name</li>
+ *   <li>{@code @RegisterGuard("web")} — 声明 GuardDefinition，注解 value 即 guard name</li>
+ *   <li>{@code @RegisterGuard(value = "api", defaultGuard = true)} — 标记默认守卫</li>
  * </ul>
- * {@code AuthAutoConfiguration} 通过 {@code Map<String, UserProvider>} 和 {@code Map<String, GuardDefinition>}
- * 自动收集并注册到 {@link com.weacsoft.jaravel.vendor.auth.AuthManager}。
+ * {@code AuthRegistrar} 会在所有 Bean 初始化完成后扫描注解并注册到 {@link com.weacsoft.jaravel.vendor.auth.AuthManager}。
+ * 注解声明的 guard / provider 不会注册为 Spring Bean，因此不会与同名 bean 冲突。
  *
  * <h3>认证架构</h3>
  * <ul>
@@ -33,7 +35,7 @@ import org.springframework.context.annotation.Configuration;
  *
  * // guards
  * 'web'   => driver=session, provider=users    // Web 场景：Session 驱动
- * 'api'   => driver=jwt,    provider=users     // API 场景：JWT 驱动
+ * 'api'   => driver=jwt,    provider=users     // API 场景：JWT 驱动（默认）
  * 'admin' => driver=jwt,    provider=admins    // 管理后台：JWT 驱动 + admins provider
  * </pre>
  *
@@ -82,13 +84,13 @@ import org.springframework.context.annotation.Configuration;
 public class AuthConfig {
 
     // ---- 注册用户提供者（provider）----
-    // @Bean("users") 的 bean name 即 provider name
-    // AuthAutoConfiguration 通过 Map<String, UserProvider> 自动收集
+    // @RegisterProvider("users") 的 value 即 provider name
+    // AuthRegistrar 扫描注解方法并注册到 AuthManager
 
     /**
      * User provider：用户表，凭证字段 number（工号）。
      */
-    @Bean("users")
+    @RegisterProvider("users")
     public UserProvider usersProvider(User userModel) {
         return new EloquentUserProvider<>(userModel, "number");
     }
@@ -96,28 +98,29 @@ public class AuthConfig {
     /**
      * Admin provider：管理员表，凭证字段 username。
      */
-    @Bean("admins")
+    @RegisterProvider("admins")
     public UserProvider adminsProvider(Admin adminModel) {
         return new EloquentUserProvider<>(adminModel, "username");
     }
 
     // ---- 注册守卫（guard）----
-    // @Bean("web") 的 bean name 即 guard name
-    // AuthAutoConfiguration 通过 Map<String, GuardDefinition> 自动收集
+    // @RegisterGuard("web") 的 value 即 guard name
+    // AuthRegistrar 扫描注解方法并注册到 AuthManager
 
     /**
      * web 守卫：Session 驱动，绑定 users provider。
      * Session 存储由 SessionConfig 全局决定（默认 CookieSessionStore）。
      */
-    @Bean("web")
+    @RegisterGuard("web")
     public GuardDefinition webGuard() {
         return GuardDefinition.of("session", "users");
     }
 
     /**
      * api 守卫：JWT 驱动，绑定 users provider（用户场景，无状态）。
+     * 标记为默认守卫（{@code defaultGuard = true}）。
      */
-    @Bean("api")
+    @RegisterGuard(value = "api", defaultGuard = true)
     public GuardDefinition apiGuard() {
         return GuardDefinition.of("jwt", "users");
     }
@@ -125,7 +128,7 @@ public class AuthConfig {
     /**
      * admin 守卫：JWT 驱动，绑定 admins provider（管理员场景，无状态）。
      */
-    @Bean("admin")
+    @RegisterGuard("admin")
     public GuardDefinition adminGuard() {
         return GuardDefinition.of("jwt", "admins");
     }

@@ -5,6 +5,7 @@ import com.weacsoft.jaravel.vendor.http.controller.ControllerRegistry;
 import com.weacsoft.jaravel.vendor.http.middleware.ConvertEmptyStringsToNull;
 import com.weacsoft.jaravel.vendor.http.middleware.TrimStrings;
 import com.weacsoft.jaravel.vendor.route.Router;
+import com.weacsoft.jaravel.vendor.route.Routes;
 import com.weacsoft.jaravel.routes.Api;
 import com.weacsoft.jaravel.routes.Web;
 import com.weacsoft.jaravel.app.http.middleware.AppTrimStrings;
@@ -34,6 +35,10 @@ import org.springframework.context.annotation.Configuration;
  *   <li><b>手动实例化</b>：直接 {@code new} 并通过匿名类覆盖方法，或使用默认配置直接 {@code new}，
  *       通过 {@code router.middleware(instance)} 直接添加</li>
  * </ul>
+ * <p>
+ * <b>静态门面</b>（对齐 Laravel {@code Route::get()}）：通过 {@link Routes#setRootRouter(Router)}
+ * 初始化后，可在任意位置使用 {@code Routes.get()}、{@code Routes.group()} 等静态方法注册路由，
+ * 无需传递 Router 实例。路由组闭包为无参 {@code Runnable}，系统通过 ThreadLocal 自动计算层级。
  */
 @Configuration
 public class RouteServiceProvider extends ServiceProvider {
@@ -50,6 +55,10 @@ public class RouteServiceProvider extends ServiceProvider {
         ControllerRegistry.setScanBasePackages("com.weacsoft.jaravel.app.http.controller");
 
         Router baseRouter = new Router();
+
+        // 初始化静态门面（对齐 Laravel Route Facade）
+        // 初始化后可在 Api、Web 等路由定义类中使用 Routes.get()、Routes.group() 等静态方法
+        Routes.setRootRouter(baseRouter);
 
         // 全局中间件演示两种使用方式：
 
@@ -69,9 +78,13 @@ public class RouteServiceProvider extends ServiceProvider {
         // baseRouter.middleware(new ConvertEmptyStringsToNull()); // 使用默认排除列表
 
         // 加载 API 路由（控制器通过字符串引用，无需传入 context）
+        // Api.register() 内部可使用 Routes.get() 静态方法或 router.get() 实例方法，两者等效
         context.getBean(Api.class).register(baseRouter);
         // 加载 Web 路由
         context.getBean(Web.class).register(baseRouter);
+
+        // 清理 ThreadLocal 上下文（防止线程池复用时泄漏）
+        Routes.clearContext();
         return baseRouter;
     }
 }

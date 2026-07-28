@@ -2,6 +2,7 @@ package com.weacsoft.jaravel.routes;
 
 import com.weacsoft.jaravel.vendor.route.Route;
 import com.weacsoft.jaravel.vendor.route.Router;
+import com.weacsoft.jaravel.vendor.route.Routes;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -28,6 +29,27 @@ import java.util.Map;
  *       admin 守卫走管理员 RBAC，其它守卫走用户 RBAC</li>
  * </ul>
  * 中间件标注 {@code @MiddlewareAlias} 后由 SpringBoot classpath 扫描自动注册（非 Spring Bean），无需手动 new。
+ * <p>
+ * <b>分组中间件</b>：通过 {@code Route.Group.MIDDLEWARE} 在 group 参数中直接声明中间件，
+ * 无需在闭包后链式调用 {@code .middleware()}。支持单个别名（{@code String}）或多个别名（{@code String[]}）。
+ * <p>
+ * <b>静态门面</b>（可选）：{@link Routes} 提供 Laravel 风格的静态 API，无需传递 Router 实例：
+ * <pre>
+ * // 在 RouteServiceProvider 中调用 Routes.setRootRouter(baseRouter) 后：
+ * Routes.group(Map.of(Route.Group.PREFIX, "api"), () -> {
+ *     Routes.get("/users", "UserController::list").name("users.index");
+ *
+ *     Routes.group(Map.of(
+ *         Route.Group.MIDDLEWARE, new String[]{"auth:admin", "permission:admin"}
+ *     ), () -> {
+ *         Routes.get("/home", "HomeController::index");
+ *     });
+ * });
+ * // 或使用流式构建器：
+ * Routes.middleware("auth:admin", "permission:admin").prefix("admin").group(() -> {
+ *     Routes.get("/home", "HomeController::index");
+ * });
+ * </pre>
  */
 @Component
 public class Api {
@@ -65,7 +87,9 @@ public class Api {
             api.get("/demo/event/order", "EventCacheDemoController::demoOrderEvent");
 
             // ===== Admin 路由（admin guard + admin 路由权限中间件） =====
-            api.group(Map.of(), admin -> {
+            api.group(Map.of(
+                    Route.Group.MIDDLEWARE, new String[]{"auth:admin", "permission:admin"}
+            ), admin -> {
                 admin.post("/auth/admin/logout", "AuthController::adminLogout");
                 admin.get("/auth/admin/me", "AuthController::adminMe");
 
@@ -192,10 +216,12 @@ public class Api {
                 admin.delete("/remote/sub-servers/{subServerId}", "RemoteController::unregisterSubServer");
                 admin.post("/remote/sub-servers/{subServerId}/connect", "RemoteController::connectSubServer");
                 admin.post("/remote/sub-servers/{subServerId}/disconnect", "RemoteController::disconnectSubServer");
-            }).middleware("auth:admin", "permission:admin");
+            });
 
             // ===== User 路由（api guard + user 路由权限中间件） =====
-            api.group(Map.of(), user -> {
+            api.group(Map.of(
+                    Route.Group.MIDDLEWARE, new String[]{"auth:api", "permission:api"}
+            ), user -> {
                 user.post("/auth/user/logout", "AuthController::logout");
                 user.get("/auth/user/me", "AuthController::me");
                 user.get("/users", "UserController::list");
@@ -209,10 +235,12 @@ public class Api {
             }).middleware("auth:api", "permission:api");
 
             // ===== Session 路由（web guard，Session 驱动 + cookie 存储） =====
-            api.group(Map.of(), web -> {
+            api.group(Map.of(
+                    Route.Group.MIDDLEWARE, "auth:web"
+            ), web -> {
                 web.post("/auth/session/logout", "AuthController::sessionLogout");
                 web.get("/auth/session/me", "AuthController::sessionMe");
-            }).middleware("auth:web");
+            });
         });
     }
 }
