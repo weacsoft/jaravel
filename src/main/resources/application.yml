@@ -31,9 +31,20 @@ jaravel:
     # 多 cache store 演示：默认使用 array（内存），各模块可指定不同 store
     default-store: array
     prefix: jaravel
-    # file 驱动目录（空则使用系统临时目录）
+    # 按需配置 store（对齐 Laravel stores 数组）
+    # 只有配置在此处的 store 才会被创建，驱动实例在创建时才实例化（用到才构建）
+    # stores 为空时只创建 default-store 对应的默认 store
+    stores:
+      array:
+        driver: array
+      file:
+        driver: file
+        dir: ""                   # file 驱动目录（空则使用系统临时目录）
+      database:
+        driver: database
+        table: jaravel_cache      # 需先执行 artisan cache:table 建表
+    # 顶层快捷配置（向后兼容，stores 中未指定时回退到此）
     file-dir: ""
-    # database 驱动表名（需先执行 artisan cache:table 建表）
     database-table: jaravel_cache
   # ===== 多 Cache 模块级配置 =====
   # 各模块通过独立配置项指定 cache store，空串表示使用 cache 模块的默认 store
