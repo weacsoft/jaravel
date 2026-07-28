@@ -2,10 +2,13 @@ package com.weacsoft.jaravel.routes;
 
 import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.route.Routes;
-import org.springframework.stereotype.Component;
 
 /**
  * Web 路由定义，对齐 Laravel 的 {@code routes/web.php}。
+ * <p>
+ * 纯静态类，不注册为 Spring Bean。由 {@code RouteServiceProvider} 通过
+ * {@code Routes.group(Map.of(Route.Group.MIDDLEWARE, new String[]{}), Web::register)}
+ * 以方法引用形式调用，对齐 Laravel {@code Route::middleware('web')->group(base_path('routes/web.php'))}。
  * <p>
  * 全部使用 {@link Routes} 静态门面注册路由，无需传递 {@code Router} 实例。
  * 首页重定向到登录页，静态资源由 SpringBoot 默认静态资源服务处理。
@@ -13,15 +16,16 @@ import org.springframework.stereotype.Component;
  * 控制器通过字符串引用（如 {@code "PageController::captchaDemo"}），无需 {@code getBean} 获取控制器实例。
  * 闭包式路由通过 {@code Routes.currentRouter()} 获取当前 Router 后调用。
  */
-@Component
 public class Web {
 
     /**
      * 注册 Web 路由。使用 {@link Routes} 静态门面，无需传递 Router 实例。
      * <p>
-     * 前提：{@code RouteServiceProvider} 中已调用 {@code Routes.setRootRouter(baseRouter)} 初始化静态门面。
+     * 由 {@code RouteServiceProvider} 以方法引用 {@code Web::register} 调用，
+     * 外层已通过 {@code Routes.group(Map.of(Route.Group.MIDDLEWARE, new String[]{}), Web::register)}
+     * 提供 Web 组的中间件数组（对齐 Laravel {@code Route::middleware('web')->group(...)}）。
      */
-    public void register() {
+    public static void register() {
         // 首页重定向到 index.html（闭包式路由，通过 currentRouter() 调用）
         Routes.currentRouter().get("/", request -> ResponseBuilder.redirect("/index.html"));
 

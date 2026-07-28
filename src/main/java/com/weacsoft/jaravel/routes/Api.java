@@ -2,12 +2,15 @@ package com.weacsoft.jaravel.routes;
 
 import com.weacsoft.jaravel.vendor.route.Route;
 import com.weacsoft.jaravel.vendor.route.Routes;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
 /**
  * API 路由定义，对齐 Laravel 的 {@code routes/api.php}。
+ * <p>
+ * 纯静态类，不注册为 Spring Bean。由 {@code RouteServiceProvider} 通过
+ * {@code Routes.group(Map.of(Route.Group.MIDDLEWARE, new String[]{}), Api::register)}
+ * 以方法引用形式调用，对齐 Laravel {@code Route::middleware('api')->group(base_path('routes/api.php'))}。
  * <p>
  * 全部使用 {@link Routes} 静态门面注册路由（对齐 Laravel {@code Route::get()} 静态调用风格），
  * 无需传递 {@code Router} 实例。路由组闭包为无参 {@code Runnable}，系统通过 ThreadLocal 自动计算层级。
@@ -40,15 +43,16 @@ import java.util.Map;
  *       — 对齐 Laravel {@code Route::middleware('api')->prefix('api')->group(function () { ... })}</li>
  * </ul>
  */
-@Component
 public class Api {
 
     /**
      * 注册 API 路由。使用 {@link Routes} 静态门面，无需传递 Router 实例。
      * <p>
-     * 前提：{@code RouteServiceProvider} 中已调用 {@code Routes.setRootRouter(baseRouter)} 初始化静态门面。
+     * 由 {@code RouteServiceProvider} 以方法引用 {@code Api::register} 调用，
+     * 外层已通过 {@code Routes.group(Map.of(Route.Group.MIDDLEWARE, new String[]{}), Api::register)}
+     * 提供 API 组的中间件数组（对齐 Laravel {@code Route::middleware('api')->group(...)}）。
      */
-    public void register() {
+    public static void register() {
         // 控制器通过字符串引用（对齐 Laravel Route::get('/users', 'UserController@index')），
         // 无需 context.getBean() 获取控制器实例：
         //   "AuthController::adminLogin" -> 从 ControllerRegistry 查找 AuthController，反射调用 adminLogin(Request)

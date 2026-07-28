@@ -2,18 +2,17 @@ package com.weacsoft.jaravel.app.provider;
 
 import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
 import com.weacsoft.jaravel.vendor.http.controller.ControllerRegistry;
-import com.weacsoft.jaravel.vendor.http.middleware.ConvertEmptyStringsToNull;
-import com.weacsoft.jaravel.vendor.http.middleware.TrimStrings;
+import com.weacsoft.jaravel.vendor.route.Route;
 import com.weacsoft.jaravel.vendor.route.Router;
 import com.weacsoft.jaravel.vendor.route.Routes;
 import com.weacsoft.jaravel.routes.Api;
 import com.weacsoft.jaravel.routes.Web;
 import com.weacsoft.jaravel.app.http.middleware.AppTrimStrings;
 import com.weacsoft.jaravel.app.http.middleware.AppConvertEmptyStringsToNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.Map;
 
 /**
  * 路由服务提供者，对齐 Laravel 的 {@code App\Providers\RouteServiceProvider}。
@@ -26,15 +25,21 @@ import org.springframework.context.annotation.Configuration;
  * 框架通过 classpath 扫描发现控制器类并使用 AutowireCapableBeanFactory 自动注入依赖，
  * 此模式下控制器不需要标注 {@code @Component}。
  * <p>
- * <b>全局中间件</b>（对齐 Laravel Kernel $middleware）直接在根 {@link Router} 上声明，
+ * <b>路由分组</b>（对齐 Laravel Kernel 的 api / web 中间件分组）：
+ * <pre>
+ * // Laravel:
+ * Route::middleware('api')->prefix('api')->group(base_path('routes/api.php'));
+ * Route::middleware('web')->group(base_path('routes/web.php'));
+ *
+ * // Jaravel:
+ * Routes.group(Map.of(Route.Group.MIDDLEWARE, new String[]{}), Api::register);
+ * Routes.group(Map.of(Route.Group.MIDDLEWARE, new String[]{}), Web::register);
+ * </pre>
+ * {@link Api} 和 {@link Web} 是纯静态类（非 Spring Bean），通过方法引用调用。
+ * 每组的中间件数组即使为空也显式写出，方便后续扩展（如添加 {@code "throttle:api"}）。
+ * <p>
+ * <b>全局中间件</b>（对齐 Laravel Kernel {@code $middleware}）直接在根 {@link Router} 上声明，
  * 所有路由通过 {@code Router.getAllMiddlewares()} 继承。
- * 预定义中间件支持两种使用方式：
- * <ul>
- *   <li><b>继承式</b>（推荐）：继承预定义中间件，覆盖 {@code protected} 方法自定义参数，
- *       标注 {@code @MiddlewareAlias} 后由 classpath 扫描自动注册，通过类对象引用</li>
- *   <li><b>手动实例化</b>：直接 {@code new} 并通过匿名类覆盖方法，或使用默认配置直接 {@code new}，
- *       通过 {@code router.middleware(instance)} 直接添加</li>
- * </ul>
  * <p>
  * <b>静态门面</b>（对齐 Laravel {@code Route::get()}）：通过 {@link Routes#setRootRouter(Router)}
  * 初始化后，可在任意位置使用 {@code Routes.get()}、{@code Routes.group()} 等静态方法注册路由，
@@ -42,9 +47,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class RouteServiceProvider extends ServiceProvider {
-
-    @Autowired
-    private ApplicationContext context;
 
     @Bean
     public Router configureRoutes() {
@@ -60,28 +62,23 @@ public class RouteServiceProvider extends ServiceProvider {
         // 初始化后可在 Api、Web 等路由定义类中使用 Routes.get()、Routes.group() 等静态方法
         Routes.setRootRouter(baseRouter);
 
-        // 全局中间件演示两种使用方式：
-
-        // 方式一：继承式（推荐）— 继承预定义中间件，覆盖 protected 方法自定义参数，
-        //         标注 @MiddlewareAlias 后由 classpath 扫描自动注册，通过类对象引用
+        // ===== 全局中间件（对齐 Laravel Kernel $middleware，所有路由继承） =====
         baseRouter.middleware(AppTrimStrings.class)
                   .middleware(AppConvertEmptyStringsToNull.class);
 
-        // 方式二：手动实例化 — 直接 new 并通过匿名类覆盖方法自定义参数，
-        //         或使用默认配置直接 new，通过 router.middleware(instance) 直接添加
-        // baseRouter.middleware(new TrimStrings() {
-        //     @Override
-        //     protected String[] except() {
-        //         return new String[]{"password", "password_confirmation"};
-        //     }
-        // });
-        // baseRouter.middleware(new ConvertEmptyStringsToNull()); // 使用默认排除列表
+        // ===== API 路由组（对齐 Laravel Route::middleware('api')->group(base_path('routes/api.php'))） =====
+        // Api 是纯静态类，通过方法引用调用，无需 Spring 容器获取
+        // 中间件数组即使为空也显式写出，方便后续扩展（如添加 "throttle:api"）
+        Routes.group(Map.of(
+                Route.Group.MIDDLEWARE, new String[]{}
+        ), Api::register);
 
-        // 加载 API 路由（使用 Routes 静态门面，无需传递 Router 实例）
-        // Api.register() 内部使用 Routes.get()、Routes.group() 等静态方法
-        context.getBean(Api.class).register();
-        // 加载 Web 路由
-        context.getBean(Web.class).register();
+        // ===== Web 路由组（对齐 Laravel Route::middleware('web')->group(base_path('routes/web.php'))） =====
+        // Web 是纯静态类，通过方法引用调用，无需 Spring 容器获取
+        // 中间件数组即使为空也显式写出，方便后续扩展（如添加 "VerifyCsrfToken"、"EncryptCookies"）
+        Routes.group(Map.of(
+                Route.Group.MIDDLEWARE, new String[]{}
+        ), Web::register);
 
         // 清理 ThreadLocal 上下文（防止线程池复用时泄漏）
         Routes.clearContext();
