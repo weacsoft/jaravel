@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户权限模型，对应 {@code user_permissions} 表。
@@ -66,6 +67,11 @@ public class UserPermission extends BaseModel<UserPermission, Long> {
     @Column(inDatabase = false)
     private Boolean assigned;
 
+    /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
+    public static UserPermission self() {
+        return BaseModel.self(UserPermission.class);
+    }
+
     public static UserPermission find(Long id) {
         return BaseModel.find(UserPermission.class, id);
     }
@@ -81,5 +87,20 @@ public class UserPermission extends BaseModel<UserPermission, Long> {
     public static UserPermission findByCode(String code) {
         Record<UserPermission, Long> record = query().where("code", code).first();
         return record == null ? null : record.toObject();
+    }
+
+    /** 查找匹配条件的记录，存在则更新，不存在则创建 */
+    public static UserPermission updateOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.updateOrCreate(UserPermission.class, conditions, attributes);
+    }
+
+    /** 查找匹配条件的记录，不存在则创建 */
+    public static UserPermission firstOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.firstOrCreate(UserPermission.class, conditions, attributes);
+    }
+
+    /** 查找匹配条件的记录，不存在则返回新实例（未持久化） */
+    public static UserPermission firstOrNew(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.firstOrNew(UserPermission.class, conditions, attributes);
     }
 }

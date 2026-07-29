@@ -44,6 +44,11 @@ public class UserRolePermission extends BaseModel<UserRolePermission, Long> {
     @Column(name = "updated_at")
     private String updatedAt;
 
+    /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
+    public static UserRolePermission self() {
+        return BaseModel.self(UserRolePermission.class);
+    }
+
     public static QueryBuilder<UserRolePermission, Long> query() {
         return BaseModel.query(UserRolePermission.class);
     }

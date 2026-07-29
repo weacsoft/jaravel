@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 角色模型，对齐 Laravel Eloquent 的 {@code app/Models/Admin/AdminRole.php}。
@@ -62,6 +63,11 @@ public class AdminRole extends BaseModel<AdminRole, Long> {
 
     // ---- 静态查询方法（委托给 BaseModel 工具方法） ----
 
+    /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
+    public static AdminRole self() {
+        return BaseModel.self(AdminRole.class);
+    }
+
     /** 按主键查询 */
     public static AdminRole find(Long id) {
         return BaseModel.find(AdminRole.class, id);
@@ -81,5 +87,20 @@ public class AdminRole extends BaseModel<AdminRole, Long> {
     public static AdminRole findByCode(String code) {
         Record<AdminRole, Long> record = query().where("code", code).first();
         return record == null ? null : record.toObject();
+    }
+
+    /** 查找匹配条件的记录，存在则更新，不存在则创建 */
+    public static AdminRole updateOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.updateOrCreate(AdminRole.class, conditions, attributes);
+    }
+
+    /** 查找匹配条件的记录，不存在则创建 */
+    public static AdminRole firstOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.firstOrCreate(AdminRole.class, conditions, attributes);
+    }
+
+    /** 查找匹配条件的记录，不存在则返回新实例（未持久化） */
+    public static AdminRole firstOrNew(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.firstOrNew(AdminRole.class, conditions, attributes);
     }
 }

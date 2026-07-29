@@ -46,6 +46,11 @@ public class AdminRole extends BaseModel<AdminRole, Long> {
 
     // ---- 静态查询方法 ----
 
+    /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
+    public static AdminRole self() {
+        return BaseModel.self(AdminRole.class);
+    }
+
     /** 获取查询构造器 */
     public static QueryBuilder<AdminRole, Long> query() {
         return BaseModel.query(AdminRole.class);

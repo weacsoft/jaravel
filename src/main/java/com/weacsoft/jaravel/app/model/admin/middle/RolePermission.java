@@ -47,6 +47,11 @@ public class RolePermission extends BaseModel<RolePermission, Long> {
 
     // ---- 静态查询方法 ----
 
+    /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
+    public static RolePermission self() {
+        return BaseModel.self(RolePermission.class);
+    }
+
     /** 获取查询构造器 */
     public static QueryBuilder<RolePermission, Long> query() {
         return BaseModel.query(RolePermission.class);

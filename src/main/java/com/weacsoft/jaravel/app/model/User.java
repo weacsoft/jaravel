@@ -13,6 +13,7 @@ import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户模型，对齐 Laravel Eloquent 的 {@code app/Models/User.php}。
@@ -67,6 +68,11 @@ public class User extends BaseModel<User, Long> implements Authenticatable {
 
     // ---- 静态查询方法（委托给 BaseModel 工具方法） ----
 
+    /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
+    public static User self() {
+        return BaseModel.self(User.class);
+    }
+
     /** 按主键查询，对齐 Laravel User::find(1) */
     public static User find(Long id) {
         return BaseModel.find(User.class, id);
@@ -86,6 +92,21 @@ public class User extends BaseModel<User, Long> implements Authenticatable {
     public static User findByNumber(String number) {
         Record<User, Long> record = query().where("number", number).first();
         return record == null ? null : record.toObject();
+    }
+
+    /** 查找匹配条件的记录，存在则更新，不存在则创建，对齐 Laravel User::updateOrCreate() */
+    public static User updateOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.updateOrCreate(User.class, conditions, attributes);
+    }
+
+    /** 查找匹配条件的记录，不存在则创建，对齐 Laravel User::firstOrCreate() */
+    public static User firstOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.firstOrCreate(User.class, conditions, attributes);
+    }
+
+    /** 查找匹配条件的记录，不存在则返回新实例（未持久化），对齐 Laravel User::firstOrNew() */
+    public static User firstOrNew(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.firstOrNew(User.class, conditions, attributes);
     }
 
     // ---- Authenticatable ----

@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 权限模型，对齐 Laravel Eloquent 的 {@code app/Models/Admin/AdminPermission.php}。
@@ -92,6 +93,11 @@ public class AdminPermission extends BaseModel<AdminPermission, Long> {
 
     // ---- 静态查询方法（委托给 BaseModel 工具方法） ----
 
+    /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
+    public static AdminPermission self() {
+        return BaseModel.self(AdminPermission.class);
+    }
+
     /** 按主键查询 */
     public static AdminPermission find(Long id) {
         return BaseModel.find(AdminPermission.class, id);
@@ -111,5 +117,20 @@ public class AdminPermission extends BaseModel<AdminPermission, Long> {
     public static AdminPermission findByCode(String code) {
         Record<AdminPermission, Long> record = query().where("code", code).first();
         return record == null ? null : record.toObject();
+    }
+
+    /** 查找匹配条件的记录，存在则更新，不存在则创建 */
+    public static AdminPermission updateOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.updateOrCreate(AdminPermission.class, conditions, attributes);
+    }
+
+    /** 查找匹配条件的记录，不存在则创建 */
+    public static AdminPermission firstOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.firstOrCreate(AdminPermission.class, conditions, attributes);
+    }
+
+    /** 查找匹配条件的记录，不存在则返回新实例（未持久化） */
+    public static AdminPermission firstOrNew(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.firstOrNew(AdminPermission.class, conditions, attributes);
     }
 }

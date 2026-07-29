@@ -39,6 +39,11 @@ public class UserRole extends BaseModel<UserRole, Long> {
     @Column(name = "updated_at")
     private String updatedAt;
 
+    /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
+    public static UserRole self() {
+        return BaseModel.self(UserRole.class);
+    }
+
     public static QueryBuilder<UserRole, Long> query() {
         return BaseModel.query(UserRole.class);
     }

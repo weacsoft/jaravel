@@ -13,6 +13,7 @@ import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 /**
  * 管理员模型，对齐 Laravel Eloquent 的 {@code app/Models/Admin/Admin.php}。
  * <p>
@@ -63,6 +64,11 @@ public class Admin extends BaseModel<Admin, Long> implements Authenticatable {
 
     // ---- 静态查询方法（委托给 BaseModel 工具方法） ----
 
+    /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
+    public static Admin self() {
+        return BaseModel.self(Admin.class);
+    }
+
     /** 按主键查询，对齐 Laravel Admin::find(1) */
     public static Admin find(Long id) {
         return BaseModel.find(Admin.class, id);
@@ -82,6 +88,21 @@ public class Admin extends BaseModel<Admin, Long> implements Authenticatable {
     public static Admin findByUsername(String username) {
         Record<Admin, Long> record = query().where("username", username).first();
         return record == null ? null : record.toObject();
+    }
+
+    /** 查找匹配条件的记录，存在则更新，不存在则创建，对齐 Laravel Admin::updateOrCreate() */
+    public static Admin updateOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.updateOrCreate(Admin.class, conditions, attributes);
+    }
+
+    /** 查找匹配条件的记录，不存在则创建，对齐 Laravel Admin::firstOrCreate() */
+    public static Admin firstOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.firstOrCreate(Admin.class, conditions, attributes);
+    }
+
+    /** 查找匹配条件的记录，不存在则返回新实例（未持久化），对齐 Laravel Admin::firstOrNew() */
+    public static Admin firstOrNew(Map<String, Object> conditions, Map<String, Object> attributes) {
+        return BaseModel.firstOrNew(Admin.class, conditions, attributes);
     }
 
     // ---- Authenticatable 接口实现 ----
