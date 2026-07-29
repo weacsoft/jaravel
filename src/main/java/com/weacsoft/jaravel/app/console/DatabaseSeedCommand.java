@@ -113,7 +113,7 @@ public class DatabaseSeedCommand extends ArtisanCommand {
         AdminRole superAdmin = findOrCreateAdminRole("超级管理员", "super_admin", "拥有全部权限");
 
         // 为超级管理员分配所有 Admin 权限
-        List<AdminPermission> allPermissions = AdminPermission.all();
+        List<AdminPermission> allPermissions = AdminPermission.self().findAll().toObjectList();
         for (AdminPermission perm : allPermissions) {
             AdminRolePermissionService.assignPermissionToRole(superAdmin.getId(), perm.getId());
         }
@@ -168,7 +168,7 @@ public class DatabaseSeedCommand extends ArtisanCommand {
     // ===== 工具方法 =====
 
     private AdminPermission findOrCreateAdminPermission(String name, String code, Long parentId, String route, String description) {
-        Record<AdminPermission, Long> record = AdminPermission.query().where("code", code).first();
+        Record<AdminPermission, Long> record = AdminPermission.self().newQuery().where("code", code).first();
         if (record != null) {
             return record.toObject();
         }
@@ -176,7 +176,7 @@ public class DatabaseSeedCommand extends ArtisanCommand {
     }
 
     private UserPermission findOrCreateUserPermission(String name, String code, Long parentId, String route, String description) {
-        Record<UserPermission, Long> record = UserPermission.query().where("code", code).first();
+        Record<UserPermission, Long> record = UserPermission.self().newQuery().where("code", code).first();
         if (record != null) {
             return record.toObject();
         }
@@ -184,7 +184,7 @@ public class DatabaseSeedCommand extends ArtisanCommand {
     }
 
     private AdminRole findOrCreateAdminRole(String name, String code, String description) {
-        Record<AdminRole, Long> record = AdminRole.query().where("code", code).first();
+        Record<AdminRole, Long> record = AdminRole.self().newQuery().where("code", code).first();
         if (record != null) {
             return record.toObject();
         }
@@ -192,7 +192,7 @@ public class DatabaseSeedCommand extends ArtisanCommand {
     }
 
     private UserRole findOrCreateUserRole(String name, String code, String description) {
-        Record<UserRole, Long> record = UserRole.query().where("code", code).first();
+        Record<UserRole, Long> record = UserRole.self().newQuery().where("code", code).first();
         if (record != null) {
             return record.toObject();
         }
@@ -200,12 +200,12 @@ public class DatabaseSeedCommand extends ArtisanCommand {
     }
 
     private AdminRole findAdminRoleByCode(String code) {
-        Record<AdminRole, Long> record = AdminRole.query().where("code", code).first();
+        Record<AdminRole, Long> record = AdminRole.self().newQuery().where("code", code).first();
         return record == null ? null : record.toObject();
     }
 
     private void assignUserPermissionByCode(Long roleId, String permissionCode) {
-        Record<UserPermission, Long> record = UserPermission.query().where("code", permissionCode).first();
+        Record<UserPermission, Long> record = UserPermission.self().newQuery().where("code", permissionCode).first();
         if (record != null) {
             UserRolePermissionService.assignPermissionToRole(roleId, record.toObject().getId());
         }

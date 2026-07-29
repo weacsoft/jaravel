@@ -7,21 +7,19 @@ import gaarason.database.annotation.Column;
 import gaarason.database.annotation.Primary;
 import gaarason.database.annotation.Table;
 import gaarason.database.contract.eloquent.Record;
-import gaarason.database.query.QueryBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Map;
 /**
  * 管理员模型，对齐 Laravel Eloquent 的 {@code app/Models/Admin/Admin.php}。
  * <p>
  * 作为 RBAC 权限管理的主体，通过 {@code admin_role} 中间表与 {@link AdminRole} 多对多关联。
  * <p>
- * 除了常规的静态查询方法外，还提供面向对象的权限判断实例方法：
+ * 除了常规的查询能力外，还提供面向对象的权限判断实例方法：
  * <pre>
- * Admin admin = Admin.find(1L);
+ * Admin admin = Admin.self().find(1L).toObject();
  * if (admin.hasRole("super_admin") && admin.hasPermission("user.create")) {
  *     // 执行受保护的操作
  * }
@@ -62,47 +60,17 @@ public class Admin extends BaseModel<Admin, Long> implements Authenticatable {
     @Column(name = "updated_at")
     private String updatedAt;
 
-    // ---- 静态查询方法（委托给 BaseModel 工具方法） ----
+    // ---- 静态入口方法 ----
 
     /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
     public static Admin self() {
         return BaseModel.self(Admin.class);
     }
 
-    /** 按主键查询，对齐 Laravel Admin::find(1) */
-    public static Admin find(Long id) {
-        return BaseModel.find(Admin.class, id);
-    }
-
-    /** 查询全部，对齐 Laravel Admin::all() */
-    public static List<Admin> all() {
-        return BaseModel.all(Admin.class);
-    }
-
-    /** 获取查询构造器，对齐 Laravel Admin::query() */
-    public static QueryBuilder<Admin, Long> query() {
-        return BaseModel.query(Admin.class);
-    }
-
     /** 按用户名查询，对齐 Laravel Admin::where('username', x)->first() */
     public static Admin findByUsername(String username) {
-        Record<Admin, Long> record = query().where("username", username).first();
+        Record<Admin, Long> record = self().newQuery().where("username", username).first();
         return record == null ? null : record.toObject();
-    }
-
-    /** 查找匹配条件的记录，存在则更新，不存在则创建，对齐 Laravel Admin::updateOrCreate() */
-    public static Admin updateOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.updateOrCreate(Admin.class, conditions, attributes);
-    }
-
-    /** 查找匹配条件的记录，不存在则创建，对齐 Laravel Admin::firstOrCreate() */
-    public static Admin firstOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.firstOrCreate(Admin.class, conditions, attributes);
-    }
-
-    /** 查找匹配条件的记录，不存在则返回新实例（未持久化），对齐 Laravel Admin::firstOrNew() */
-    public static Admin firstOrNew(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.firstOrNew(Admin.class, conditions, attributes);
     }
 
     // ---- Authenticatable 接口实现 ----
@@ -191,7 +159,7 @@ public class Admin extends BaseModel<Admin, Long> implements Authenticatable {
      * <p>
      * 典型用法：
      * <pre>
-     * Admin admin = Admin.find(1L);
+     * Admin admin = Admin.self().find(1L).toObject();
      * if (admin.canAccessRoute("/admin/user/create")) {
      *     // 允许访问
      * }

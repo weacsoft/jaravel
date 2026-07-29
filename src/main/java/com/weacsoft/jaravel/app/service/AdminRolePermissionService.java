@@ -62,7 +62,7 @@ public final class AdminRolePermissionService {
 
     /** 按主键查询管理员 */
     public static Admin findAdmin(Long id) {
-        return Admin.find(id);
+        return Admin.self().find(id).toObject();
     }
 
     /** 按用户名查询管理员 */
@@ -72,7 +72,7 @@ public final class AdminRolePermissionService {
 
     /** 查询全部管理员 */
     public static List<Admin> listAdmins() {
-        return Admin.all();
+        return Admin.self().findAll().toObjectList();
     }
 
     /**
@@ -84,10 +84,10 @@ public final class AdminRolePermissionService {
      */
     public static Admin updateAdmin(Long id, Map<String, Object> fields) {
         if (id == null || fields == null || fields.isEmpty()) {
-            return Admin.find(id);
+            return Admin.self().find(id).toObject();
         }
-        Admin.query().where("id", id).data(fields).update();
-        return Admin.find(id);
+        Admin.self().newQuery().where("id", id).data(fields).update();
+        return Admin.self().find(id).toObject();
     }
 
     /**
@@ -100,7 +100,7 @@ public final class AdminRolePermissionService {
             return false;
         }
         detachAllAdminRoles(id);
-        return Admin.query().where("id", id).delete() > 0;
+        return Admin.self().newQuery().where("id", id).delete() > 0;
     }
 
     // ================================================================
@@ -118,7 +118,7 @@ public final class AdminRolePermissionService {
 
     /** 按主键查询角色 */
     public static AdminRole findRole(Long id) {
-        return AdminRole.find(id);
+        return AdminRole.self().find(id).toObject();
     }
 
     /** 按编码查询角色 */
@@ -128,16 +128,16 @@ public final class AdminRolePermissionService {
 
     /** 查询全部角色 */
     public static List<AdminRole> listRoles() {
-        return AdminRole.all();
+        return AdminRole.self().findAll().toObjectList();
     }
 
     /** 更新角色字段 */
     public static AdminRole updateRole(Long id, Map<String, Object> fields) {
         if (id == null || fields == null || fields.isEmpty()) {
-            return AdminRole.find(id);
+            return AdminRole.self().find(id).toObject();
         }
-        AdminRole.query().where("id", id).data(fields).update();
-        return AdminRole.find(id);
+        AdminRole.self().newQuery().where("id", id).data(fields).update();
+        return AdminRole.self().find(id).toObject();
     }
 
     /**
@@ -151,7 +151,7 @@ public final class AdminRolePermissionService {
         }
         deleteAdminRolePivotsByRole(id);
         deleteRolePermissionPivotsByRole(id);
-        return AdminRole.query().where("id", id).delete() > 0;
+        return AdminRole.self().newQuery().where("id", id).delete() > 0;
     }
 
     // ================================================================
@@ -176,7 +176,7 @@ public final class AdminRolePermissionService {
 
     /** 按主键查询权限 */
     public static AdminPermission findPermission(Long id) {
-        return AdminPermission.find(id);
+        return AdminPermission.self().find(id).toObject();
     }
 
     /** 按编码查询权限 */
@@ -186,16 +186,16 @@ public final class AdminRolePermissionService {
 
     /** 查询全部权限 */
     public static List<AdminPermission> listPermissions() {
-        return AdminPermission.all();
+        return AdminPermission.self().findAll().toObjectList();
     }
 
     /** 更新权限字段（注意：变更 parent_id 会改变树形结构） */
     public static AdminPermission updatePermission(Long id, Map<String, Object> fields) {
         if (id == null || fields == null || fields.isEmpty()) {
-            return AdminPermission.find(id);
+            return AdminPermission.self().find(id).toObject();
         }
-        AdminPermission.query().where("id", id).data(fields).update();
-        return AdminPermission.find(id);
+        AdminPermission.self().newQuery().where("id", id).data(fields).update();
+        return AdminPermission.self().find(id).toObject();
     }
 
     /**
@@ -208,7 +208,7 @@ public final class AdminRolePermissionService {
         if (id == null) {
             return false;
         }
-        AdminPermission target = AdminPermission.find(id);
+        AdminPermission target = AdminPermission.self().find(id).toObject();
         if (target == null) {
             return false;
         }
@@ -216,10 +216,10 @@ public final class AdminRolePermissionService {
         Long grandParent = target.getParentId();
         Map<String, Object> reparent = new HashMap<>();
         reparent.put("parent_id", grandParent);
-        AdminPermission.query().where("parent_id", id).data(reparent).update();
+        AdminPermission.self().newQuery().where("parent_id", id).data(reparent).update();
         // 清理中间表关联
         deleteRolePermissionPivotsByPermission(id);
-        return AdminPermission.query().where("id", id).delete() > 0;
+        return AdminPermission.self().newQuery().where("id", id).delete() > 0;
     }
 
     // ================================================================
@@ -275,7 +275,7 @@ public final class AdminRolePermissionService {
      */
     public static List<AdminRole> getAdminRolesAll(Long adminId) {
         Set<Long> assignedIds = roleIdsOfAdmin(adminId);
-        List<AdminRole> all = AdminRole.all();
+        List<AdminRole> all = AdminRole.self().findAll().toObjectList();
         for (AdminRole role : all) {
             role.setAssigned(assignedIds.contains(role.getId()));
         }
@@ -287,7 +287,7 @@ public final class AdminRolePermissionService {
         Set<Long> roleIds = roleIdsOfAdmin(adminId);
         List<AdminRole> result = new ArrayList<>();
         for (Long roleId : roleIds) {
-            AdminRole role = AdminRole.find(roleId);
+            AdminRole role = AdminRole.self().find(roleId).toObject();
             if (role != null) {
                 role.setAssigned(true);
                 result.add(role);
@@ -317,12 +317,12 @@ public final class AdminRolePermissionService {
 
     /** 解除角色的单个权限，返回受影响行数 */
     public static int removePermissionFromRole(Long roleId, Long permissionId) {
-        return RolePermission.query().where("role_id", roleId).where("permission_id", permissionId).delete();
+        return RolePermission.self().newQuery().where("role_id", roleId).where("permission_id", permissionId).delete();
     }
 
     /** 解除角色的所有权限，返回受影响行数 */
     public static int removeAllPermissionsFromRole(Long roleId) {
-        return RolePermission.query().where("role_id", roleId).delete();
+        return RolePermission.self().newQuery().where("role_id", roleId).delete();
     }
 
     /** 判断角色是否显式拥有指定权限（按权限 ID，不含树形祖先推导） */
@@ -348,7 +348,7 @@ public final class AdminRolePermissionService {
      */
     public static List<AdminPermission> getRolePermissionsAll(Long roleId) {
         Set<Long> assignedIds = permissionIdsOfRole(roleId);
-        List<AdminPermission> all = AdminPermission.all();
+        List<AdminPermission> all = AdminPermission.self().findAll().toObjectList();
         for (AdminPermission permission : all) {
             permission.setAssigned(assignedIds.contains(permission.getId()));
         }
@@ -360,7 +360,7 @@ public final class AdminRolePermissionService {
         Set<Long> permissionIds = permissionIdsOfRole(roleId);
         List<AdminPermission> result = new ArrayList<>();
         for (Long permissionId : permissionIds) {
-            AdminPermission permission = AdminPermission.find(permissionId);
+            AdminPermission permission = AdminPermission.self().find(permissionId).toObject();
             if (permission != null) {
                 permission.setAssigned(true);
                 result.add(permission);
@@ -418,7 +418,7 @@ public final class AdminRolePermissionService {
      * 标记该权限是否对管理员生效（已考虑树形祖先授权：父权限生效则其所有子权限均标记为生效）。
      */
     public static List<AdminPermission> getAdminPermissionsAll(Long adminId) {
-        List<AdminPermission> all = AdminPermission.all();
+        List<AdminPermission> all = AdminPermission.self().findAll().toObjectList();
         for (AdminPermission permission : all) {
             permission.setAssigned(adminHasPermission(adminId, permission.getId()));
         }
@@ -430,7 +430,7 @@ public final class AdminRolePermissionService {
      */
     public static List<AdminPermission> getAdminPermissionsAssigned(Long adminId) {
         List<AdminPermission> result = new ArrayList<>();
-        for (AdminPermission permission : AdminPermission.all()) {
+        for (AdminPermission permission : AdminPermission.self().findAll().toObjectList()) {
             if (adminHasPermission(adminId, permission.getId())) {
                 permission.setAssigned(true);
                 result.add(permission);
@@ -469,7 +469,7 @@ public final class AdminRolePermissionService {
                 }
             }
             if (grants) {
-                AdminRole role = AdminRole.find(roleId);
+                AdminRole role = AdminRole.self().find(roleId).toObject();
                 if (role != null) {
                     grantors.add(role);
                 }
@@ -569,7 +569,7 @@ public final class AdminRolePermissionService {
             return false;
         }
         String normalizedRoute = normalizeRoute(route);
-        for (AdminPermission permission : AdminPermission.all()) {
+        for (AdminPermission permission : AdminPermission.self().findAll().toObjectList()) {
             String pattern = permission.getRoute();
             if (pattern == null || pattern.isEmpty()) {
                 continue;
@@ -601,7 +601,7 @@ public final class AdminRolePermissionService {
         if (adminId == null) {
             return routes;
         }
-        for (AdminPermission permission : AdminPermission.all()) {
+        for (AdminPermission permission : AdminPermission.self().findAll().toObjectList()) {
             String pattern = permission.getRoute();
             if (pattern == null || pattern.isEmpty()) {
                 continue;
@@ -624,7 +624,7 @@ public final class AdminRolePermissionService {
      */
     private static Map<Long, Long> buildParentMap() {
         Map<Long, Long> parentMap = new HashMap<>();
-        for (AdminPermission permission : AdminPermission.all()) {
+        for (AdminPermission permission : AdminPermission.self().findAll().toObjectList()) {
             parentMap.put(permission.getId(), permission.getParentId());
         }
         return parentMap;
@@ -635,7 +635,7 @@ public final class AdminRolePermissionService {
      */
     private static Map<Long, List<Long>> buildChildrenMap() {
         Map<Long, List<Long>> children = new HashMap<>();
-        for (AdminPermission permission : AdminPermission.all()) {
+        for (AdminPermission permission : AdminPermission.self().findAll().toObjectList()) {
             if (permission.getParentId() != null) {
                 children.computeIfAbsent(permission.getParentId(), k -> new ArrayList<>())
                         .add(permission.getId());
@@ -715,19 +715,19 @@ public final class AdminRolePermissionService {
 
     /** 删除指定 admin↔role 关联，返回受影响行数 */
     private static int detachAdminRole(Long adminId, Long roleId) {
-        return com.weacsoft.jaravel.app.model.admin.middle.AdminRole.query()
+        return com.weacsoft.jaravel.app.model.admin.middle.AdminRole.self().newQuery()
                 .where("admin_id", adminId).where("role_id", roleId).delete();
     }
 
     /** 删除管理员的全部 admin↔role 关联，返回受影响行数 */
     private static int detachAllAdminRoles(Long adminId) {
-        return com.weacsoft.jaravel.app.model.admin.middle.AdminRole.query()
+        return com.weacsoft.jaravel.app.model.admin.middle.AdminRole.self().newQuery()
                 .where("admin_id", adminId).delete();
     }
 
     /** 删除某角色被引用的全部 admin↔role 关联（角色删除时级联） */
     private static int deleteAdminRolePivotsByRole(Long roleId) {
-        return com.weacsoft.jaravel.app.model.admin.middle.AdminRole.query()
+        return com.weacsoft.jaravel.app.model.admin.middle.AdminRole.self().newQuery()
                 .where("role_id", roleId).delete();
     }
 
@@ -751,11 +751,11 @@ public final class AdminRolePermissionService {
 
     /** 删除某角色被引用的全部 role↔permission 关联（角色删除时级联） */
     private static int deleteRolePermissionPivotsByRole(Long roleId) {
-        return RolePermission.query().where("role_id", roleId).delete();
+        return RolePermission.self().newQuery().where("role_id", roleId).delete();
     }
 
     /** 删除某权限被引用的全部 role↔permission 关联（权限删除时级联） */
     private static int deleteRolePermissionPivotsByPermission(Long permissionId) {
-        return RolePermission.query().where("permission_id", permissionId).delete();
+        return RolePermission.self().newQuery().where("permission_id", permissionId).delete();
     }
 }

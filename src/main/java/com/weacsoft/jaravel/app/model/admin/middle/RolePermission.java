@@ -4,7 +4,6 @@ import com.weacsoft.jaravel.vendor.database.BaseModel;
 import gaarason.database.annotation.Column;
 import gaarason.database.annotation.Primary;
 import gaarason.database.annotation.Table;
-import gaarason.database.query.QueryBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
@@ -45,30 +44,25 @@ public class RolePermission extends BaseModel<RolePermission, Long> {
     @Column(name = "updated_at")
     private String updatedAt;
 
-    // ---- 静态查询方法 ----
+    // ---- 静态入口方法 ----
 
     /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
     public static RolePermission self() {
         return BaseModel.self(RolePermission.class);
     }
 
-    /** 获取查询构造器 */
-    public static QueryBuilder<RolePermission, Long> query() {
-        return BaseModel.query(RolePermission.class);
-    }
-
     /** 查询指定角色的全部权限关联记录 */
     public static List<RolePermission> findByRoleId(Long roleId) {
-        return query().where("role_id", roleId).get().toObjectList();
+        return self().newQuery().where("role_id", roleId).get().toObjectList();
     }
 
     /** 查询指定权限被哪些角色引用 */
     public static List<RolePermission> findByPermissionId(Long permissionId) {
-        return query().where("permission_id", permissionId).get().toObjectList();
+        return self().newQuery().where("permission_id", permissionId).get().toObjectList();
     }
 
     /** 判断指定角色是否已关联指定权限 */
     public static boolean exists(Long roleId, Long permissionId) {
-        return query().where("role_id", roleId).where("permission_id", permissionId).first() != null;
+        return self().newQuery().where("role_id", roleId).where("permission_id", permissionId).first() != null;
     }
 }

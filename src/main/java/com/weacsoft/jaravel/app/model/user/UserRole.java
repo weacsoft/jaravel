@@ -5,13 +5,9 @@ import gaarason.database.annotation.Column;
 import gaarason.database.annotation.Primary;
 import gaarason.database.annotation.Table;
 import gaarason.database.contract.eloquent.Record;
-import gaarason.database.query.QueryBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * 用户角色模型，对应 {@code user_roles} 表。
@@ -59,35 +55,8 @@ public class UserRole extends BaseModel<UserRole, Long> {
         return BaseModel.self(UserRole.class);
     }
 
-    public static UserRole find(Long id) {
-        return BaseModel.find(UserRole.class, id);
-    }
-
-    public static List<UserRole> all() {
-        return BaseModel.all(UserRole.class);
-    }
-
-    public static QueryBuilder<UserRole, Long> query() {
-        return BaseModel.query(UserRole.class);
-    }
-
     public static UserRole findByCode(String code) {
-        Record<UserRole, Long> record = query().where("code", code).first();
+        Record<UserRole, Long> record = self().newQuery().where("code", code).first();
         return record == null ? null : record.toObject();
-    }
-
-    /** 查找匹配条件的记录，存在则更新，不存在则创建 */
-    public static UserRole updateOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.updateOrCreate(UserRole.class, conditions, attributes);
-    }
-
-    /** 查找匹配条件的记录，不存在则创建 */
-    public static UserRole firstOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.firstOrCreate(UserRole.class, conditions, attributes);
-    }
-
-    /** 查找匹配条件的记录，不存在则返回新实例（未持久化） */
-    public static UserRole firstOrNew(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.firstOrNew(UserRole.class, conditions, attributes);
     }
 }

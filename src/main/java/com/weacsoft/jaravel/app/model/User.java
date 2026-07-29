@@ -7,13 +7,11 @@ import gaarason.database.annotation.Column;
 import gaarason.database.annotation.Primary;
 import gaarason.database.annotation.Table;
 import gaarason.database.contract.eloquent.Record;
-import gaarason.database.query.QueryBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 用户模型，对齐 Laravel Eloquent 的 {@code app/Models/User.php}。
@@ -25,10 +23,10 @@ import java.util.Map;
  * user.setName("alice");
  * user.save();
  *
- * // 静态查询
- * User found = User.find(1L);
- * List&lt;User&gt; all = User.all();
- * User u = User.query().where("name", "alice").first().toObject();
+ * // 通过 self() 统一访问所有 gaarason 方法
+ * User found = User.self().find(1L).toObject();
+ * List&lt;User&gt; all = User.self().findAll().toObjectList();
+ * User u = User.self().newQuery().where("name", "alice").first().toObject();
  *
  * // 克隆
  * User clone = user.replicate();
@@ -66,47 +64,17 @@ public class User extends BaseModel<User, Long> implements Authenticatable {
     @Column(name = "updated_at")
     private String updatedAt;
 
-    // ---- 静态查询方法（委托给 BaseModel 工具方法） ----
+    // ---- 静态入口方法 ----
 
     /** 获取 Spring 管理的实例，可调用所有 gaarason 方法 */
     public static User self() {
         return BaseModel.self(User.class);
     }
 
-    /** 按主键查询，对齐 Laravel User::find(1) */
-    public static User find(Long id) {
-        return BaseModel.find(User.class, id);
-    }
-
-    /** 查询全部，对齐 Laravel User::all() */
-    public static List<User> all() {
-        return BaseModel.all(User.class);
-    }
-
-    /** 获取查询构造器，对齐 Laravel User::query() */
-    public static QueryBuilder<User, Long> query() {
-        return BaseModel.query(User.class);
-    }
-
     /** 按工号查询，对齐 Laravel User::where('number', x)->first() */
     public static User findByNumber(String number) {
-        Record<User, Long> record = query().where("number", number).first();
+        Record<User, Long> record = self().newQuery().where("number", number).first();
         return record == null ? null : record.toObject();
-    }
-
-    /** 查找匹配条件的记录，存在则更新，不存在则创建，对齐 Laravel User::updateOrCreate() */
-    public static User updateOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.updateOrCreate(User.class, conditions, attributes);
-    }
-
-    /** 查找匹配条件的记录，不存在则创建，对齐 Laravel User::firstOrCreate() */
-    public static User firstOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.firstOrCreate(User.class, conditions, attributes);
-    }
-
-    /** 查找匹配条件的记录，不存在则返回新实例（未持久化），对齐 Laravel User::firstOrNew() */
-    public static User firstOrNew(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.firstOrNew(User.class, conditions, attributes);
     }
 
     // ---- Authenticatable ----
@@ -169,7 +137,7 @@ public class User extends BaseModel<User, Long> implements Authenticatable {
      * <p>
      * 典型用法（多租户插件运行场景）：
      * <pre>
-     * User user = User.find(1L);
+     * User user = User.self().find(1L).toObject();
      * if (user.hasPermission("plugin.java.run")) {
      *     // 允许运行 Java 插件
      * }

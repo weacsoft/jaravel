@@ -4,7 +4,6 @@ import com.weacsoft.jaravel.vendor.database.BaseModel;
 import gaarason.database.annotation.Column;
 import gaarason.database.annotation.Primary;
 import gaarason.database.annotation.Table;
-import gaarason.database.query.QueryBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
@@ -44,19 +43,15 @@ public class UserRole extends BaseModel<UserRole, Long> {
         return BaseModel.self(UserRole.class);
     }
 
-    public static QueryBuilder<UserRole, Long> query() {
-        return BaseModel.query(UserRole.class);
-    }
-
     public static List<UserRole> findByUserId(Long userId) {
-        return query().where("user_id", userId).get().toObjectList();
+        return self().newQuery().where("user_id", userId).get().toObjectList();
     }
 
     public static List<UserRole> findByRoleId(Long roleId) {
-        return query().where("role_id", roleId).get().toObjectList();
+        return self().newQuery().where("role_id", roleId).get().toObjectList();
     }
 
     public static boolean exists(Long userId, Long roleId) {
-        return query().where("user_id", userId).where("role_id", roleId).first() != null;
+        return self().newQuery().where("user_id", userId).where("role_id", roleId).first() != null;
     }
 }

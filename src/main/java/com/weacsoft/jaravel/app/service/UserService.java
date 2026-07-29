@@ -45,7 +45,7 @@ public final class UserService {
         user.save();
 
         // 为新用户分配默认角色（普通用户），使其具备基本访问权限
-        Record<UserRole, Long> defaultRole = UserRole.query().where("code", "user").first();
+        Record<UserRole, Long> defaultRole = UserRole.self().newQuery().where("code", "user").first();
         if (defaultRole != null) {
             UserRolePermissionService.assignRoleToUser(user.getId(), defaultRole.toObject().getId());
         }
@@ -82,11 +82,11 @@ public final class UserService {
 
     /** 按主键查询用户，对齐 Laravel User::find() */
     public static User findById(Long id) {
-        return User.find(id);
+        return User.self().find(id).toObject();
     }
 
     /** 查询全部用户，对齐 Laravel User::all() */
     public static List<User> list() {
-        return User.all();
+        return User.self().findAll().toObjectList();
     }
 }

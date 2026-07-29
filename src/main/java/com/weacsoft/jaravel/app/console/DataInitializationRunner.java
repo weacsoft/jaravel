@@ -39,7 +39,7 @@ public class DataInitializationRunner implements ApplicationRunner {
         try {
             // 不使用 count()（SQLite 下 gaarason 内部 Long 类型转换会失败），
             // 改用 first() 检查是否有任何记录
-            boolean isEmpty = Admin.query().first() == null;
+            boolean isEmpty = Admin.self().newQuery().first() == null;
             if (isEmpty) {
                 log.info("[init] admin 表为空，自动执行种子数据初始化...");
                 seedCommand.handle();

@@ -5,13 +5,9 @@ import gaarason.database.annotation.Column;
 import gaarason.database.annotation.Primary;
 import gaarason.database.annotation.Table;
 import gaarason.database.contract.eloquent.Record;
-import gaarason.database.query.QueryBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * 用户权限模型，对应 {@code user_permissions} 表。
@@ -72,35 +68,8 @@ public class UserPermission extends BaseModel<UserPermission, Long> {
         return BaseModel.self(UserPermission.class);
     }
 
-    public static UserPermission find(Long id) {
-        return BaseModel.find(UserPermission.class, id);
-    }
-
-    public static List<UserPermission> all() {
-        return BaseModel.all(UserPermission.class);
-    }
-
-    public static QueryBuilder<UserPermission, Long> query() {
-        return BaseModel.query(UserPermission.class);
-    }
-
     public static UserPermission findByCode(String code) {
-        Record<UserPermission, Long> record = query().where("code", code).first();
+        Record<UserPermission, Long> record = self().newQuery().where("code", code).first();
         return record == null ? null : record.toObject();
-    }
-
-    /** 查找匹配条件的记录，存在则更新，不存在则创建 */
-    public static UserPermission updateOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.updateOrCreate(UserPermission.class, conditions, attributes);
-    }
-
-    /** 查找匹配条件的记录，不存在则创建 */
-    public static UserPermission firstOrCreate(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.firstOrCreate(UserPermission.class, conditions, attributes);
-    }
-
-    /** 查找匹配条件的记录，不存在则返回新实例（未持久化） */
-    public static UserPermission firstOrNew(Map<String, Object> conditions, Map<String, Object> attributes) {
-        return BaseModel.firstOrNew(UserPermission.class, conditions, attributes);
     }
 }
