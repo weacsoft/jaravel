@@ -2,7 +2,6 @@ package com.weacsoft.jaravel.app.provider;
 
 import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
 import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
-import com.weacsoft.jaravel.vendor.jblade.BladeAssetHelper;
 import com.weacsoft.jaravel.vendor.jblade.BladeEngine;
 import com.weacsoft.jaravel.vendor.jblade.BladeFunctions;
 import com.weacsoft.jaravel.vendor.route.RouteDefinition;
@@ -21,8 +20,8 @@ import java.util.Map;
  * 在应用启动时创建 {@link BladeEngine} 实例（模板目录 classpath:templates/），
  * 注入到 {@link ResponseBuilder} 中，使控制器可以通过 {@code ResponseBuilder.view()} 渲染模板。
  * <p>
- * 同时配置 {@link BladeAssetHelper} 的 URL 前缀为 {@code /static}，
- * 使模板中的 {@code @asset('css/app.css')} 编译为 {@code /static/css/app.css}。
+ * asset 与 url 行为一致，模板中的 {@code @asset('css/app.css')} 与
+ * {@code {{ asset('css/app.css') }}} 均按根路径拼接为 {@code /css/app.css}，不附加任何资源前缀。
  * <p>
  * <b>动态函数注册（不修改 jblade 源码的外部扩展点）</b>：
  * 通过 {@link BladeFunctions#register} 注册 {@code route} 函数，
@@ -43,9 +42,6 @@ public class BladeEngineProvider extends ServiceProvider {
 
     @Override
     public void register() {
-        // 配置静态资源 URL 前缀
-        BladeAssetHelper.setUrlPrefix("/static");
-
         // ===== 动态函数：route(name [, params]) —— http 模块路由别名 -> URI =====
         // 不修改 jblade 核心源码，通过 BladeFunctions 外部注册；
         // BladeTemplate.route()/routeAny() 运行时优先查找此注册表。
@@ -63,7 +59,7 @@ public class BladeEngineProvider extends ServiceProvider {
         ResponseBuilder.setBladeEngine(engine);
         WireManager.setEngine(engine);
 
-        log.info("[blade] BladeEngine 已初始化, 模板目录=templates/, 后缀=.blade.java, 资源前缀=/static");
+        log.info("[blade] BladeEngine 已初始化, 模板目录=templates/, 后缀=.blade.java, asset 与 url 一致(无资源前缀)");
         log.info("[blade] 动态函数 route() 已注册, 按 http 模块路由别名解析 URI");
         log.info("[wire] WireManager 已初始化, 使用同一 BladeEngine 实例");
     }
