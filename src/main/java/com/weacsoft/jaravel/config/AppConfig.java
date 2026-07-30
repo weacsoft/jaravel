@@ -7,6 +7,7 @@ import com.weacsoft.jaravel.vendor.core.Application;
 import com.weacsoft.jaravel.vendor.core.SpringContext;
 import com.weacsoft.jaravel.vendor.core.config.ConfigRepository;
 import com.weacsoft.jaravel.vendor.event.Dispatcher;
+import com.weacsoft.jaravel.vendor.route.RouteHelper;
 import com.weacsoft.jaravel.vendor.route.Router;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -136,5 +137,22 @@ public class AppConfig extends Application {
      */
     public Router router() {
         return make(Router.class);
+    }
+
+    /**
+     * 路由辅助门面（对齐 Laravel 全局辅助函数 {@code route()} / {@code url()}）。
+     * <p>
+     * 返回 {@link RouteHelper} 共享实例，提供两套语义，与 Laravel 高度一致：
+     * <pre>
+     * // route(别名) —— 按路由别名解析 URL（对齐 Laravel route('admin.login')）
+     * String url = AppConfig.app().route().route("admin.login");
+     *
+     * // url(路径) —— 单纯生成 URL，不校验是否存在（对齐 Laravel url('/admin/login')）
+     * String url2 = AppConfig.app().route().url("admin/login");
+     * </pre>
+     * 也可静态调用 {@code RouteHelper.route("admin.login")} / {@code RouteHelper.url("/admin/login")}。
+     */
+    public RouteHelper route() {
+        return RouteHelper.instance();
     }
 }

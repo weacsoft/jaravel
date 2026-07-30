@@ -3,6 +3,7 @@ package com.weacsoft.jaravel.app.provider;
 import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
 import com.weacsoft.jaravel.vendor.http.controller.ControllerRegistry;
 import com.weacsoft.jaravel.vendor.route.Route;
+import com.weacsoft.jaravel.vendor.route.RouteHelper;
 import com.weacsoft.jaravel.vendor.route.Router;
 import com.weacsoft.jaravel.routes.Api;
 import com.weacsoft.jaravel.routes.Web;
@@ -60,6 +61,9 @@ public class RouteServiceProvider extends ServiceProvider {
         // 初始化静态门面（对齐 Laravel Route Facade）
         // 初始化后可在 Api、Web 等路由定义类中使用 Route.get()、Route.group() 等静态方法
         Route.setRootRouter(baseRouter);
+
+        // 注入根路由器到 RouteHelper（供 route()/url() 辅助函数按别名解析 URL）
+        RouteHelper.setRouter(baseRouter);
 
         // ===== 全局中间件（对齐 Laravel Kernel $middleware，所有路由继承） =====
         baseRouter.middleware(AppTrimStrings.class)
