@@ -74,9 +74,11 @@ public class RouteServiceProvider extends ServiceProvider {
 
         // ===== Web 路由组（对齐 Laravel Route::middleware('web')->group(base_path('routes/web.php'))） =====
         // Web 是纯静态类，通过方法引用调用，无需 Spring 容器获取
-        // 中间件数组即使为空也显式写出，方便后续扩展（如添加 "VerifyCsrfToken"、"EncryptCookies"）
+        // 挂上 VerifyCsrfToken 中间件：POST/PUT/PATCH/DELETE 等请求需校验 CSRF token，
+        // GET/HEAD/OPTIONS 及 VerifyCsrfToken 排除路由（如 api/、logout 等）自动放行。
+        // token 由 VerifyCsrfToken 写入 HttpSession(csrf_token)，与模板 csrf_field() 共用同源值。
         Route.group(Map.of(
-                Route.Group.MIDDLEWARE, new String[]{}
+                Route.Group.MIDDLEWARE, new String[]{"VerifyCsrfToken"}
         ), Web::register);
 
         // 清理 ThreadLocal 上下文（防止线程池复用时泄漏）

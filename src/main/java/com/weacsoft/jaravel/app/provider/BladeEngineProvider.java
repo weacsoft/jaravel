@@ -1,6 +1,9 @@
 package com.weacsoft.jaravel.app.provider;
 
 import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
+import com.weacsoft.jaravel.app.http.middleware.AppVerifyCsrfToken;
+import com.weacsoft.jaravel.vendor.http.controller.request.Request;
+import com.weacsoft.jaravel.vendor.http.controller.request.RequestFactory;
 import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.jblade.BladeEngine;
 import com.weacsoft.jaravel.vendor.jblade.BladeFunctions;
@@ -28,6 +31,11 @@ import java.util.Map;
  * 将模板中的 {@code @route('login')} / {@code {{ route('users.show', ...) }}}
  * 解析为 http 模块中以 {@link RouteDefinition#name(String)} 命名的路由别名对应的 URI，
  * 语义对齐 Laravel 的 {@code route()} 辅助函数。
+ * 同时注册 {@code csrf_token} 函数：从当前请求的 HttpSession 读取
+ * {@code VerifyCsrfToken} 维护的 token（无则生成并写回），使模板中的
+ * {@code {{ csrf_field() }}} / {@code @csrf} 输出非空隐藏域
+ * （{@code <input type="hidden" name="_token" value="...">}），
+ * 且与 Web 路由组挂接的 {@code VerifyCsrfToken} 中间件校验同源。
  */
 @Component
 public class BladeEngineProvider extends ServiceProvider {
@@ -51,6 +59,22 @@ public class BladeEngineProvider extends ServiceProvider {
             return resolveRoute(name, params);
         });
 
+        // ===== 动态函数：csrf_token() —— 对齐 Laravel csrf_token() =====
+        // 复用 AppVerifyCsrfToken 读取当前请求 session 中的 token（无则生成并写回），
+        // 保证 csrf_field() 渲染出的隐藏域 value 非空，且与 Web 路由组挂接的
+        // VerifyCsrfToken 中间件校验用的 token 同源一致。
+        BladeFunctions.register("csrf_token", args -> {
+            try {
+                Request req = RequestFactory.getCurrentRequest();
+                if (req != null) {
+                    return AppVerifyCsrfToken.currentToken(req);
+                }
+            } catch (Exception ignored) {
+                // 非 Web 请求上下文（如离线模板渲染）回退到空串，由调用方决定
+            }
+            return "";
+        });
+
         // 创建 BladeEngine，模板目录为 classpath 下的 templates/
         // 显式传入 MemoryClassLoader 避免 jblade 内部无参构造器触发 ClassLoader 模块访问问题
         MemoryClassLoader classLoader = new MemoryClassLoader(
@@ -61,6 +85,7 @@ public class BladeEngineProvider extends ServiceProvider {
 
         log.info("[blade] BladeEngine 已初始化, 模板目录=templates/, 后缀=.blade.java, asset 与 url 一致(无资源前缀)");
         log.info("[blade] 动态函数 route() 已注册, 按 http 模块路由别名解析 URI");
+        log.info("[blade] 动态函数 csrf_token() 已注册, 从 HttpSession 读取/生成 token, 与 VerifyCsrfToken 中间件同源");
         log.info("[wire] WireManager 已初始化, 使用同一 BladeEngine 实例");
     }
 
