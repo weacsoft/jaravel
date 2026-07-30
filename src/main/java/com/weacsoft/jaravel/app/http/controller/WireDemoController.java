@@ -1,5 +1,6 @@
 package com.weacsoft.jaravel.app.http.controller;
 
+import com.weacsoft.jaravel.vendor.http.controller.Controllers;
 import com.weacsoft.jaravel.vendor.http.controller.request.Request;
 import com.weacsoft.jaravel.vendor.http.controller.response.Response;
 import com.weacsoft.jaravel.vendor.wire.WireService;
@@ -13,7 +14,7 @@ import java.util.Arrays;
  * 使用 {@link WireService} 流式 API，零 if/switch。
  */
 @Component
-public class WireDemoController {
+public class WireDemoController implements Controllers {
 
     private static final String TEMPLATE = "wire-demo";
     private static final String UPDATE_URL = "/api/wire/demo";

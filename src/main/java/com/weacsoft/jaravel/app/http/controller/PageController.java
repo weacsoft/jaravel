@@ -1,5 +1,6 @@
 package com.weacsoft.jaravel.app.http.controller;
 
+import com.weacsoft.jaravel.vendor.http.controller.Controllers;
 import com.weacsoft.jaravel.vendor.http.controller.request.Request;
 import com.weacsoft.jaravel.vendor.http.controller.response.Response;
 import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
@@ -16,7 +17,7 @@ import java.util.Map;
  * 静态资源指令（@asset）。
  */
 @Component
-public class PageController {
+public class PageController implements Controllers {
 
     /**
      * 首页 — 演示 jblade 基本变量输出和布局继承。
@@ -59,5 +60,18 @@ public class PageController {
         Map<String, Object> data = new HashMap<>();
         data.put("appName", "jaravel");
         return ResponseBuilder.view("captcha-demo", data);
+    }
+
+    /**
+     * jblade 功能演示页面 — 三层模板继承（blade-demo -> demo.two-col -> demo.base）、
+     * @parent 合并、$loop、@route 路由别名、转义/原样输出等。
+     */
+    public Response bladeDemo(Request request) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("appName", "jaravel");
+        data.put("score", 88);
+        data.put("items", java.util.List.of("多重继承", "@parent 合并", "动态函数加载"));
+        data.put("rawHtml", "<em>raw-html</em>");
+        return ResponseBuilder.view("blade-demo", data);
     }
 }

@@ -4,11 +4,16 @@ import com.weacsoft.jaravel.vendor.core.provider.ServiceProvider;
 import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
 import com.weacsoft.jaravel.vendor.jblade.BladeAssetHelper;
 import com.weacsoft.jaravel.vendor.jblade.BladeEngine;
+import com.weacsoft.jaravel.vendor.jblade.BladeFunctions;
+import com.weacsoft.jaravel.vendor.route.RouteDefinition;
+import com.weacsoft.jaravel.vendor.route.Router;
 import com.weacsoft.jaravel.vendor.utils.memory.MemoryClassLoader;
 import com.weacsoft.jaravel.vendor.wire.WireManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
  * Blade 模板引擎初始化提供者。
@@ -18,16 +23,37 @@ import org.springframework.stereotype.Component;
  * <p>
  * 同时配置 {@link BladeAssetHelper} 的 URL 前缀为 {@code /static}，
  * 使模板中的 {@code @asset('css/app.css')} 编译为 {@code /static/css/app.css}。
+ * <p>
+ * <b>动态函数注册（不修改 jblade 源码的外部扩展点）</b>：
+ * 通过 {@link BladeFunctions#register} 注册 {@code route} 函数，
+ * 将模板中的 {@code @route('login')} / {@code {{ route('users.show', ...) }}}
+ * 解析为 http 模块中以 {@link RouteDefinition#name(String)} 命名的路由别名对应的 URI，
+ * 语义对齐 Laravel 的 {@code route()} 辅助函数。
  */
 @Component
 public class BladeEngineProvider extends ServiceProvider {
 
     private static final Logger log = LoggerFactory.getLogger(BladeEngineProvider.class);
 
+    private final Router router;
+
+    public BladeEngineProvider(Router router) {
+        this.router = router;
+    }
+
     @Override
     public void register() {
         // 配置静态资源 URL 前缀
         BladeAssetHelper.setUrlPrefix("/static");
+
+        // ===== 动态函数：route(name [, params]) —— http 模块路由别名 -> URI =====
+        // 不修改 jblade 核心源码，通过 BladeFunctions 外部注册；
+        // BladeTemplate.route()/routeAny() 运行时优先查找此注册表。
+        BladeFunctions.register("route", args -> {
+            String name = String.valueOf(args[0]);
+            Object params = args.length > 1 ? args[1] : null;
+            return resolveRoute(name, params);
+        });
 
         // 创建 BladeEngine，模板目录为 classpath 下的 templates/
         // 显式传入 MemoryClassLoader 避免 jblade 内部无参构造器触发 ClassLoader 模块访问问题
@@ -38,6 +64,45 @@ public class BladeEngineProvider extends ServiceProvider {
         WireManager.setEngine(engine);
 
         log.info("[blade] BladeEngine 已初始化, 模板目录=templates/, 后缀=.blade.java, 资源前缀=/static");
+        log.info("[blade] 动态函数 route() 已注册, 按 http 模块路由别名解析 URI");
         log.info("[wire] WireManager 已初始化, 使用同一 BladeEngine 实例");
+    }
+
+    /**
+     * 按路由别名解析 URI（对齐 Laravel route() 语义）。
+     *
+     * @param name   路由别名（{@code Route.get(...).name("login")} 注册的完整名称）
+     * @param params 路由参数：Map 时按参数名替换 {@code {key}} / {@code {key?}}；
+     *               单值时替换第一个占位符；null 时不替换
+     * @return 解析后的 URI；未找到别名时退化为 {@code /name}（点转斜杠）并输出警告
+     */
+    private String resolveRoute(String name, Object params) {
+        // getFullName() 返回的完整名称带前导点（normalizeName 语义），匹配前统一去除
+        String target = name.startsWith(".") ? name.substring(1) : name;
+        for (RouteDefinition def : router.getAllRoutes()) {
+            String fullName = def.getFullName();
+            if (fullName == null) {
+                continue;
+            }
+            String candidate = fullName.startsWith(".") ? fullName.substring(1) : fullName;
+            if (target.equals(candidate)) {
+                String uri = def.getFullUri();
+                if (!uri.startsWith("/")) {
+                    uri = "/" + uri;
+                }
+                if (params instanceof Map) {
+                    for (Map.Entry<?, ?> e : ((Map<?, ?>) params).entrySet()) {
+                        String key = String.valueOf(e.getKey());
+                        String value = String.valueOf(e.getValue());
+                        uri = uri.replace("{" + key + "?}", value).replace("{" + key + "}", value);
+                    }
+                } else if (params != null) {
+                    uri = uri.replaceFirst("\\{[^/{}]+\\}", String.valueOf(params));
+                }
+                return uri;
+            }
+        }
+        log.warn("[blade] route('{}') 未找到对应路由别名, 退化为路径映射", name);
+        return "/" + name.replace('.', '/');
     }
 }

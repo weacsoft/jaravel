@@ -29,11 +29,14 @@ public class Web {
         // 首页重定向到 index.html（闭包式路由，通过 currentRouter() 调用）
         Route.currentRouter().get("/", request -> ResponseBuilder.redirect("/index.html"));
 
-        // 验证码演示页面（字符串控制器引用）
-        Route.get("/captcha-demo", "PageController::captchaDemo");
+        // 验证码演示页面（字符串控制器引用），命名路由供模板 @route('captcha.demo') 引用
+        Route.get("/captcha-demo", "PageController::captchaDemo").name("captcha.demo");
 
-        // Wire Demo 页面（初始渲染，字符串控制器引用）
-        Route.get("/wire-demo", "WireDemoController::page");
+        // jblade 功能演示页面（三层继承 / @parent / $loop / @route 路由别名 / 动态函数）
+        Route.get("/blade-demo", "PageController::bladeDemo").name("blade.demo");
+
+        // Wire Demo 页面（初始渲染，字符串控制器引用），命名路由供模板 @route('wire.demo') 引用
+        Route.get("/wire-demo", "WireDemoController::page").name("wire.demo");
 
         // Wire Demo 更新端点（POST，处理 wire 请求）
         // 如需认证保护，添加 .middleware("auth:api") 即可：
