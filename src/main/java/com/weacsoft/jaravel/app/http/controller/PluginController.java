@@ -30,7 +30,16 @@ import java.util.*;
 @Controller
 public class PluginController implements Controllers {
 
-    @Autowired
+    /**
+     * JAR 热插件管理器。
+     * <p>
+     * {@code HotPluginManager} 由 {@code PluginJarAutoConfiguration} 提供，
+     * 该自动配置带 {@code @ConditionalOnWebApplication(SERVLET)}，
+     * 因此在 artisan 命令行模式（{@code WebApplicationType.NONE}）下不存在。
+     * 这里使用 {@code required = false}，与下方另外两个插件管理器保持一致，
+     * 避免命令行模式启动时因缺少该 Bean 而失败。
+     */
+    @Autowired(required = false)
     private HotPluginManager jarPluginManager;
 
     @Autowired(required = false)

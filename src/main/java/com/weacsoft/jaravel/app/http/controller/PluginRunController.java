@@ -28,7 +28,13 @@ import java.util.Map;
 @Controller
 public class PluginRunController implements Controllers {
 
-    @Autowired
+    /**
+     * JAR 热插件管理器。
+     * <p>
+     * 该 Bean 仅在 Servlet Web 环境下由 {@code PluginJarAutoConfiguration} 提供，
+     * artisan 命令行模式下不存在，故使用 {@code required = false} 避免启动失败。
+     */
+    @Autowired(required = false)
     private HotPluginManager jarPluginManager;
 
     @Autowired(required = false)
