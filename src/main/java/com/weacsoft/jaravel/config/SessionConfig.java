@@ -1,6 +1,6 @@
 package com.weacsoft.jaravel.config;
 
-import com.weacsoft.jaravel.vendor.auth.contract.SessionStore;
+import com.weacsoft.jaravel.vendor.http.session.SessionStore;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Configuration;
  * 都使用此处注册的 {@link SessionStore} 实现。
  * <p>
  * <h3>默认实现</h3>
- * 如果本配置类不注册任何 {@code SessionStore} Bean，auth 模块的
- * {@code AuthAutoConfiguration} 会自动提供 {@code CookieSessionStore}
+ * 如果本配置类不注册任何 {@code SessionStore} Bean，http 模块的
+ * {@code HttpSessionAutoConfiguration} 会自动提供 {@code CookieSessionStore}
  * （使用 Servlet 容器的 HttpSession，即 Cookie 方式）。
  * <p>
  * <h3>切换为 Redis 存储</h3>
@@ -43,7 +43,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SessionConfig {
     // 默认使用 CookieSessionStore（Servlet HttpSession）
-    // auth 模块的 AuthAutoConfiguration 会自动注册 CookieSessionStore 作为默认 SessionStore Bean
+    // http 模块的 HttpSessionAutoConfiguration 会自动注册 CookieSessionStore 作为默认 SessionStore Bean
     //
     // 如需切换为 Redis Session 存储，取消以下注释并引入 session-redis 依赖：
     //

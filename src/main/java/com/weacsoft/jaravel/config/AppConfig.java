@@ -1,7 +1,7 @@
 package com.weacsoft.jaravel.config;
 
 import com.weacsoft.jaravel.vendor.auth.AuthManager;
-import com.weacsoft.jaravel.vendor.auth.contract.SessionStore;
+import com.weacsoft.jaravel.vendor.http.session.SessionStore;
 import com.weacsoft.jaravel.vendor.cache.CacheManager;
 import com.weacsoft.jaravel.vendor.core.Application;
 import com.weacsoft.jaravel.vendor.core.SpringContext;
