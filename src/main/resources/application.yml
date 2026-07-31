@@ -16,6 +16,30 @@ jaravel:
     # precompiled-classes-dir: precompiled/classes            # 预编译 class 目录路径
     template-dir: templates
     suffix: .blade.java
+  # ===== 文件存储（Storage 多磁盘抽象） =====
+  # 内置 local/public 驱动，以及扩展的 database 驱动（将文件存入关系型数据库）
+  storage:
+    enabled: true
+    default-disk: db
+    disks:
+      # 数据库存储：多机共享同一个数据库即可同步文件；默认二进制(BLOB)存放
+      db:
+        driver: database
+        visibility: private
+        options:
+          binary: true                 # true=BLOB 二进制；false=base64 文本(LONGTEXT)，用于不支持二进制的数据库
+          chunk-size: 1048576          # 单条记录(分片)字节上限；超过则切分；设为 0 表示整文件单条存放
+          table-prefix: storage_       # 数据表前缀，对应迁移脚本中的 storage_file / storage_file_chunk
+      # 本地存储（保留，便于对比/兜底）
+      local:
+        driver: local
+        root: storage/app
+        visibility: private
+      public:
+        driver: public
+        root: storage/app/public
+        url: /storage
+        visibility: public
   # Wire 部分更新模块（Laravel Livewire 风格）
   wire:
     auto-inject-js: true

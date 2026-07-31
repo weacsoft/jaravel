@@ -43,5 +43,12 @@ public class Web {
         //   - 未登录时中间件检测 X-Wire-Request 头，返回 401 JSON {redirect: "/login"}
         //   - wire.js 自动跳转登录页，用户无感知
         Route.post("/api/wire/demo", "WireDemoController::update");
+
+        // 数据库文件存储演示（driver: database）：上传/预览/下载/删除
+        Route.get("/demo/storage", "StorageDemoController::index").name("storage.demo");
+        Route.post("/demo/storage/upload", "StorageDemoController::upload");
+        Route.get("/demo/storage/download", "StorageDemoController::download");
+        Route.get("/demo/storage/view", "StorageDemoController::view");
+        Route.get("/demo/storage/delete", "StorageDemoController::delete");
     }
 }

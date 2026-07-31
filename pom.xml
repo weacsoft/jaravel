@@ -44,6 +44,14 @@
             <version>0.1.2</version>
         </dependency>
 
+        <!-- 文件存储模块（多磁盘抽象：local/public 驱动 + 扩展的 database 驱动） -->
+        <dependency>
+            <groupId>io.github.lijialong1313</groupId>
+            <artifactId>storage</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+
+
         <!-- JWT 可选模块（starter 不聚合，按需引入） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
