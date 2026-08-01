@@ -26,7 +26,7 @@ jaravel/
 │   ├── config/                              # 配置（类似 Laravel config/，扁平化单包）
 │   │   ├── AppConfig.java                   # 中央配置，@Configuration + @Import 显式控制功能启用
 │   │   ├── ViewConfig.java                  # 视图配置，@Configuration + @Bean（BladeEngine + WebMvcConfigurer 静态资源）
-│   │   ├── DatabaseConfig.java              # 数据库配置，@Configuration + @Bean（GaarasonDataSource + Druid）
+│   │   ├── DatabaseConfig.java              # 数据库配置，全局唯一 ContainerBootstrap + @RegisterConnection 连接别名
 │   │   ├── WireConfig.java                  # Wire 模块配置，@Configuration + 构造器注入（手动注入控制）
 │   │   ├── AuthConfig.java                  # 认证配置，@Configuration + 构造器注入（Guard 注册：web/api/admin 三 Guard）
 │   │   └── SessionConfig.java               # Session 存储配置，@Configuration 占位（cookie/redis）

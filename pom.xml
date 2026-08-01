@@ -26,6 +26,12 @@
 
     <properties>
         <java.version>17</java.version>
+        <!--
+            jaravel-vendor 各模块版本。
+            本地开发对接 jaravel-vendor 源码时使用 SNAPSHOT，需先在 jaravel-vendor 执行
+            mvn install；发布正式版时改为 0.1.2 即可。
+        -->
+        <jaravel.version>0.1.2-SNAPSHOT</jaravel.version>
     </properties>
 
     <!-- gaarason ORM 来自 jitpack，需声明此仓库 -->
@@ -41,14 +47,14 @@
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>starter</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
 
         <!-- 文件存储模块（多磁盘抽象：local/public 驱动 + 扩展的 database 驱动） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>storage</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
 
 
@@ -56,66 +62,66 @@
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>jwt</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
 
         <!-- 插件系统模块（可选，按需引入） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-jar-core</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-jar-database</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-java-core</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
 
         <!-- 多租户插件支持（可选，按需引入） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-jar-multi-tenant</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
 
         <!-- 远程执行服务端（可选，P2SP 子节点） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-jar-remote-server</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
 
         <!-- 远程执行客户端（可选，P2SP 主节点） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>plugin-jar-remote-client</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
 
         <!-- jblade 模板引擎（显式声明，便于直接使用 BladeEngine） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>jblade</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
 
         <!-- 自带验证码模块（支持数字、算术、滑动、旋转、文字点选） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>captcha</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
 
         <!-- Wire 部分更新模块（Laravel Livewire 风格，支持自定义 update URL 和 @section 无感更新） -->
         <dependency>
             <groupId>io.github.lijialong1313</groupId>
             <artifactId>wire</artifactId>
-            <version>0.1.2</version>
+            <version>${jaravel.version}</version>
         </dependency>
 
         <!-- Druid 数据源（手动创建 GaarasonDataSource） -->
