@@ -1,10 +1,37 @@
+# =============================================================================
+# Jaravel 应用配置
+# =============================================================================
+# 【核心原则：安装 ≠ 启用】
+#   引入某个模块的依赖，不代表它的驱动会被装配进内存。
+#   只有"用到了"（显式写了对应 driver，或触发了兜底默认）才会真正创建 Bean。
+#   好处：不用 Redis 就不会连 Redis；不用数据库就不会因缺 DataSource 而启动失败。
+#
+# 【三层优先级：声明 -> 配置 -> 默认】
+#   1. 声明：Java 配置类里的 @RegisterXxx 注解（见 src/main/java/.../config/），优先级最高，同名覆盖配置
+#   2. 配置：本文件的 yml 配置
+#   3. 默认：都没写时，各模块用自己的兜底默认值，保证功能基本可用
+#
+# 【各模块兜底默认值】
+#   auth     -> session         queue    -> sync（同步执行）
+#   cache    -> array（内存）    storage  -> local（本地目录）
+#   session  -> cookie          database -> 无兜底，未配置却使用则直接报错
+#   jwt      -> 不参与兜底，必须显式写 driver: jwt 才装配
+#
+# 本文件已按 Laravel 风格把常用配置方式都写出来，未启用的以注释保留，方便对照切换。
+# =============================================================================
+
 server:
   port: 8080
 
+# ===== 数据库连接 =====
+# database 模块没有兜底默认：不配就不建连接（应用仍能启动），但用 DB/Model 会直接报错。
+# 多数据源请改用 DatabaseConfig 的 @RegisterConnection（别名与 bean name 解耦）。
 spring:
   datasource:
     url: jdbc:sqlite:database1.sqlite
     driver-class-name: org.sqlite.JDBC
+    # username: ""
+    # password: ""
 
 jaravel:
   # 视图引擎配置（jblade Blade 模板引擎）
@@ -18,6 +45,10 @@ jaravel:
     suffix: .blade.java
   # ===== 文件存储（Storage 多磁盘抽象） =====
   # 内置 local/public 驱动，以及扩展的 database 驱动（将文件存入关系型数据库）
+  # 驱动按需装配：
+  #   - LocalFilesystemDriver   ：有 driver: local/public，或一个 driver 都没写（兜底）时装配
+  #   - DatabaseFilesystemDriver：严格按需，必须显式 driver: database 才装配（此时才需要 DataSource + storage_ 系列表）
+  # 磁盘写了但没写 driver -> 兜底为 local。
   storage:
     enabled: true
     default-disk: db
@@ -40,17 +71,62 @@ jaravel:
         root: storage/app/public
         url: /storage
         visibility: public
+      # 不写 driver 时兜底为 local：
+      # tmp:
+      #   root: storage/tmp
+      # 自定义驱动（需自行实现 FilesystemDriver 并 @RegisterFilesystemDriver("oss")）：
+      # oss:
+      #   driver: oss
+      #   options:
+      #     bucket: my-bucket
   # Wire 部分更新模块（Laravel Livewire 风格）
   wire:
     auto-inject-js: true
     js-path: /static/wire.js
+  # ===== 认证（auth） =====
+  # 本项目的 guards / providers 用【声明式】写在 AuthConfig.java 里（优先级最高）。
+  # 这里只覆盖默认守卫名。
+  #
+  # auth 模块自身始终启用（否则 Auth 静态门面会 NPE），但【具体驱动按需装配】：
+  #   - SessionGuardDriver：出现 driver: session，或一个 driver 都没写（兜底）时装配
+  #   - JwtGuardDriver    ：严格按需，必须显式 driver: jwt 才装配（JWT 不参与兜底）
   auth:
     default-guard: api
+    # ---- 配置式写法（与 AuthConfig.java 二选一，注解优先） ----
+    # providers:
+    #   users:
+    #     driver: eloquent
+    #     model: com.weacsoft.jaravel.app.model.User
+    #     credential-field: number
+    #   admins:
+    #     driver: eloquent
+    #     model: com.weacsoft.jaravel.app.model.admin.Admin
+    #     credential-field: username
+    # guards:
+    #   web:   { driver: session, provider: users }
+    #   api:   { driver: jwt,     provider: users }
+    #   admin: { driver: jwt,     provider: admins }
+    #   simple: { provider: users }        # 不写 driver -> 兜底 session
+
+  # ===== Session 存储（全局，不与 Guard 绑定） =====
+  # 不写任何配置时兜底为 cookie（Servlet HttpSession），本项目即用兜底。
+  # 引入 session-redis 依赖后，只有写了 driver: redis 才会装配 RedisSessionStore。
+  # session:
+  #   driver: redis            # cookie（兜底默认）| redis
+  #   lifetime: 30             # 分钟
+  #   prefix: "session"
+  #   connection: default      # 用 jaravel.redis.connections 里的哪个连接
+
   migration:
     enabled: true
     table: migrations
     auto-run: false
     source: classpath
+  # ===== 缓存（Cache 多 Store 抽象） =====
+  # 驱动按需装配：只有配置在 stores 里的 store 才会创建，驱动实例在 store 创建时才实例化。
+  #   - database 驱动：出现 driver: database 才装配（此时才需要 DataSource + jaravel_cache 表）
+  #   - redis 驱动   ：出现 driver: redis 才装配（引入 jaravel-redis 也不会主动连接）
+  # 一个 store 都不配时兜底为 array（内存）。
   cache:
     # 多 cache store 演示：默认使用 array（内存），各模块可指定不同 store
     default-store: array
@@ -67,6 +143,10 @@ jaravel:
       database:
         driver: database
         table: jaravel_cache      # 需先执行 artisan cache:table 建表
+      # Redis store（需引入 jaravel-redis；不写则 Redis 缓存驱动完全不装配）：
+      # redis:
+      #   driver: redis
+      #   connection: default
     # 顶层快捷配置（向后兼容，stores 中未指定时回退到此）
     file-dir: ""
     database-table: jaravel_cache
@@ -81,6 +161,8 @@ jaravel:
     store: "database"
     default-ttl: 3600
   # jwt 模块使用 array store（内存即可，重启后 token 自然过期）
+  # 注意：JWT 不参与兜底。JwtGuardDriver 只有在某个 guard 显式写了 driver: jwt 时才装配；
+  #      本项目的 api / admin 守卫在 AuthConfig.java 中声明了 driver=jwt，所以会装配。
   jwt:
     secret: jaravel-secret-key-change-in-production-must-be-32-bytes
     ttl: 3600000
@@ -89,10 +171,12 @@ jaravel:
     blacklist-prefix: "jwt:blacklist:"
     blacklist-store: "array"
   # ===== 队列配置 =====
-  # 默认使用 sync（内存队列），无需数据库表
-  # 切换到 database 驱动需先执行 artisan queue:table 建表
+  # 默认使用 sync（当前线程同步执行），无需数据库表、无需 Redis
+  # 驱动严格按需装配，且【没有 redis <-> database 的互相回退】：写谁装配谁，都不写走 sync 兜底
+  #   - driver: database -> 需先执行 artisan queue:table 建表（jobs / failed_jobs）
+  #   - driver: redis    -> 需引入 jaravel-redis
   queue:
-    driver: sync                      # sync（默认，内存队列）| database | redis
+    driver: sync                      # sync（兜底默认）| database | redis
     failed-job-retention-days: 7
     database:
       table: jobs
@@ -108,6 +192,11 @@ jaravel:
         - emails
         - payments
         - invoices
+    # Redis 队列配置（driver: redis 时生效；不写 driver: redis 则完全不装配）
+    # redis:
+    #   connection: default
+    #   queue: default
+    #   block-for-seconds: 5
   # ===== 事件队列配置（多队列线程池） =====
   event:
     queue-enabled: true
@@ -163,7 +252,10 @@ jaravel:
   schedule:
     enabled: true
 
-  # Redis 连接管理（未安装 Redis 时不影响应用启动）
+  # ===== Redis 连接管理 =====
+  # 这里只是"连接信息登记"，不代表会去连。安装 ≠ 启用：
+  # 只有某个模块显式写了 driver: redis（session / cache / queue）时，
+  # 对应的 Redis 驱动才会装配并使用下面的连接；都不写则完全不建连，不影响启动。
   redis:
     options:
       cluster: redis
