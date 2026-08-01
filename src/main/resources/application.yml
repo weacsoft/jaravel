@@ -35,14 +35,17 @@ spring:
 
 jaravel:
   # 视图引擎配置（jblade Blade 模板引擎）
+  # 新设计：框架只依赖 View 抽象，通过 @RegisterView 声明 + 本配置选择 + jblade 兜底注册。
+  # 控制器用 ResponseBuilder.view(...) 渲染时由 ViewFacade 自动取当前激活实现，无需手动 setBladeEngine。
   view:
-    # 运行时编译模式（默认，需要 JDK）
-    # 预编译模式（仅需 JRE，开发时用 BladePrecompilerMain 预编译模板）
-    precompiled-mode: false
-    # precompiled-package: precompiled/templates.jblade.zip  # 预编译打包文件路径
-    # precompiled-classes-dir: precompiled/classes            # 预编译 class 目录路径
+    # 默认激活的 View 实现名（对应 @RegisterView(name=...)）。不填则用声明中 defaultView=true 的那个。
+    # default: blade
     template-dir: templates
     suffix: .blade.java
+    asset-url-prefix: /static
+    # 预编译模式（仅需 JRE）：在 ViewConfig 中将 @RegisterView 换成 precompiledPackage/precompiledClasses 写法
+    # precompiled-package: precompiled/templates.jblade.zip   # 预编译打包文件路径
+    # precompiled-classes-dir: precompiled/classes            # 预编译 class 目录路径
   # ===== 文件存储（Storage 多磁盘抽象） =====
   # 内置 local/public 驱动，以及扩展的 database 驱动（将文件存入关系型数据库）
   # 驱动按需装配：
