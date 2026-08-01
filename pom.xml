@@ -31,7 +31,7 @@
             本地开发对接 jaravel-vendor 源码时使用 SNAPSHOT，需先在 jaravel-vendor 执行
             mvn install；发布正式版时改为 0.1.2 即可。
         -->
-        <jaravel.version>0.1.2-SNAPSHOT</jaravel.version>
+        <jaravel.version>0.1.2</jaravel.version>
     </properties>
 
     <!-- gaarason ORM 来自 jitpack，需声明此仓库 -->
