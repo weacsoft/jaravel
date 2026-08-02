@@ -44,6 +44,14 @@ public class Web {
         //   - wire.js 自动跳转登录页，用户无感知
         Route.post("/api/wire/demo", "WireDemoController::update");
 
+        // Wire 列表演示：静态数组模拟 DB 的 CRUD + 分页 + 精准刷新（对应问题 1/2/4/5/6/7）
+        Route.get("/wire-list-demo", "WireListDemoController::page").name("wire.list.demo");
+        Route.post("/api/wire/list-demo", "WireListDemoController::update");
+
+        // Wire SPA 演示：左侧菜单 + 右侧内容（第3点导航）+ 懒加载/分页/CRUD 组合（第7点）
+        Route.get("/wire-spa-demo", "WireSpaDemoController::page").name("wire.spa.demo");
+        Route.post("/api/wire/spa-demo", "WireSpaDemoController::update");
+
         // 数据库文件存储演示（driver: database）：上传/预览/下载/删除
         Route.get("/demo/storage", "StorageDemoController::index").name("storage.demo");
         Route.post("/demo/storage/upload", "StorageDemoController::upload");

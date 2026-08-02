@@ -2,9 +2,9 @@ package com.weacsoft.jaravel.config;
 
 import com.weacsoft.jaravel.vendor.cache.CacheManager;
 import com.weacsoft.jaravel.vendor.cache.CacheStore;
+import com.weacsoft.jaravel.vendor.core.view.View;
 import com.weacsoft.jaravel.vendor.jblade.view.BladeView;
 import com.weacsoft.jaravel.vendor.jblade.view.RegisterView;
-import com.weacsoft.jaravel.vendor.jblade.view.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -98,7 +98,7 @@ public class ViewConfig {
     // @RegisterView(name = "myview", defaultView = true)
     // @Bean
     // public View myView() {
-    //     return new MyCustomView(); // 实现 com.weacsoft.jaravel.vendor.jblade.view.View
+    //     return new MyCustomView(); // 实现 com.weacsoft.jaravel.vendor.core.view.View
     // }
     //
     // 写法五：完全不写任何声明 —— 由 jblade 的 ViewAutoConfiguration 兜底注册 Blade（运行时编译）。
