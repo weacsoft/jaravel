@@ -393,6 +393,7 @@ class Captcha {
             encryptionType: (opts.encryptionType || 'none').toLowerCase(),
             encryptionKey: opts.encryptionKey || null,
             autoVerify: opts.autoVerify !== false,  // 默认 true
+            config: (opts.config && typeof opts.config === 'object') ? opts.config : null,
             onSuccess: typeof opts.onSuccess === 'function' ? opts.onSuccess : null,
             onFail: typeof opts.onFail === 'function' ? opts.onFail : null,
             onComplete: typeof opts.onComplete === 'function' ? opts.onComplete : null
@@ -1189,8 +1190,21 @@ class Captcha {
 
     async _loadCaptcha() {
         this._showLoading();
+        this._emit('beforeGet', this.options.type);
         try {
-            const url = this.options.apiUrl + '?type=' + encodeURIComponent(this.options.type);
+            let url = this.options.apiUrl + '?type=' + encodeURIComponent(this.options.type);
+            // 透传 config（点击验证码的目标数量/干扰数量等），平铺为同名查询参数
+            // 与后端 CaptchaController.buildOverridesFromRequest 约定的参数名一致
+            if (this.options.config) {
+                for (const key in this.options.config) {
+                    if (Object.prototype.hasOwnProperty.call(this.options.config, key)) {
+                        const v = this.options.config[key];
+                        if (v !== undefined && v !== null) {
+                            url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(v);
+                        }
+                    }
+                }
+            }
             const resp = await fetch(url);
             const json = await resp.json();
             if (json.code !== 200) {
@@ -1199,6 +1213,7 @@ class Captcha {
             this._captchaData = json.data;
             this._captchaKey = json.data.captchaKey;
             this._renderCaptcha(json.data);
+            this._emit('afterGet', this._captchaKey, json.data);
         } catch (e) {
             this._showError('加载失败: ' + e.message);
             console.error('[Captcha] 加载验证码失败:', e);
@@ -1474,6 +1489,59 @@ class Captcha {
         );
     }
 
+    // ========== 事件系统 ==========
+
+    /**
+     * 注册事件监听。
+     * 支持事件：beforeGet（请求获取验证码前）、afterGet（获取成功后）、
+     *           complete（用户完成输入/点击后，验证通过或业务回调前）
+     * @param {string} event 事件名
+     * @param {Function} handler 处理函数
+     * @returns {Captcha} this，便于链式调用
+     */
+    on(event, handler) {
+        if (typeof event !== 'string' || typeof handler !== 'function') return this;
+        if (!this._eventHandlers) this._eventHandlers = {};
+        (this._eventHandlers[event] || (this._eventHandlers[event] = [])).push(handler);
+        return this;
+    }
+
+    /**
+     * 注销事件监听。
+     * @param {string} event 事件名
+     * @param {Function} [handler] 指定处理函数；不传则清除该事件全部监听
+     * @returns {Captcha} this
+     */
+    off(event, handler) {
+        if (!this._eventHandlers || !this._eventHandlers[event]) return this;
+        if (typeof handler !== 'function') {
+            delete this._eventHandlers[event];
+        } else {
+            this._eventHandlers[event] = this._eventHandlers[event].filter(function (h) {
+                return h !== handler;
+            });
+        }
+        return this;
+    }
+
+    /**
+     * 触发事件。支持可变参数，依次传给监听函数。
+     * @param {string} event 事件名
+     * @param {...*} args 传递给监听函数的参数
+     */
+    _emit(event) {
+        if (!this._eventHandlers || !this._eventHandlers[event]) return;
+        const handlers = this._eventHandlers[event].slice();
+        const args = Array.prototype.slice.call(arguments, 1);
+        for (let i = 0; i < handlers.length; i++) {
+            try {
+                handlers[i].apply(this, args);
+            } catch (e) {
+                console.error('[Captcha] 事件处理器异常 (' + event + '):', e);
+            }
+        }
+    }
+
     /**
      * 触发验证或完成回调。
      * - autoVerify=true（默认）：调用 verifyUrl 进行服务端验证，成功后调用 onSuccess
@@ -1515,6 +1583,9 @@ class Captcha {
             const encryptedInput = await JaravelCaptcha.encrypt(
                 raw, this._effectiveEncType, this.options.encryptionKey
             );
+
+            // 触发 complete 事件（业务方可在此时拿到 captchaKey 与加密输入做后续处理）
+            this._emit('complete', this._captchaKey, encryptedInput);
 
             // autoVerify=false 模式：不调用服务端验证，直接回调
             if (!this.options.autoVerify) {

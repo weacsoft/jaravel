@@ -1,19 +1,20 @@
 @extends('layout')
 
 @section('content')
-<div class="wire-spa" style="display:flex; min-height: 70vh; gap: 16px;">
+<div class="wire-spa" wire:section="content" style="display:flex; min-height: 70vh; gap: 16px;">
     {{-- 左侧菜单：wire:nav-menu 标记分组，菜单项用 wire:nav="pageKey" 触发 SPA 导航（第3点） --}}
     <nav wire:nav-menu class="mdui-card" style="width: 200px; flex: 0 0 200px; padding: 8px;">
         <div class="mdui-list">
-            <a wire:nav="home"  class="mdui-list-item mdui-ripple wire-nav-active" style="display:block; padding:12px; cursor:pointer;">概览</a>
-            <a wire:nav="list"  class="mdui-list-item mdui-ripple" style="display:block; padding:12px; cursor:pointer;">任务列表</a>
-            <a wire:nav="about" class="mdui-list-item mdui-ripple" style="display:block; padding:12px; cursor:pointer;">关于</a>
+            <a wire:nav="home"  class="mdui-list-item mdui-ripple @if($page === 'home') wire-nav-active @endif" style="display:block; padding:12px; cursor:pointer;">概览</a>
+            <a wire:nav="list"  class="mdui-list-item mdui-ripple @if($page === 'list') wire-nav-active @endif" style="display:block; padding:12px; cursor:pointer;">任务列表</a>
+            <a wire:nav="about" class="mdui-list-item mdui-ripple @if($page === 'about') wire-nav-active @endif" style="display:block; padding:12px; cursor:pointer;">关于</a>
         </div>
     </nav>
 
-    {{-- 右侧内容区：wire:nav-content 标记承载区，wire:section="content" 供精准刷新；
-         点击左侧菜单只刷新这块，不整页跳转（第3点 SPA）。 --}}
-    <main wire:nav-content wire:section="content" class="mdui-card" style="flex:1; padding: 16px;">
+    {{-- 右侧内容区：wire:nav-content 标记承载区，点击左侧菜单只刷新整个 content section，
+         不整页跳转（第3点 SPA）。注意 wire:section="content" 已上移到最外层 .wire-spa，
+         以保证 SPA 刷新范围与 @section('content') 范围一致（否则整页两栏会被塞进 main 导致错乱）。 --}}
+    <main wire:nav-content class="mdui-card" style="flex:1; padding: 16px;">
 
         @if($page === 'home')
             <h2>概览</h2>

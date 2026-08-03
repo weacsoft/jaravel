@@ -66,14 +66,15 @@ public class WireListDemoController implements Controllers {
      * 真正数据在 DOMContentLoaded 后由前端发 $refresh 拉取（见模板末尾脚本）。
      */
     public Response page(Request request) {
-        return WireService.of(TEMPLATE, UPDATE_URL, new LinkedHashMap<>())
+        WireService c = WireService.of(TEMPLATE, UPDATE_URL, new LinkedHashMap<>())
                 .once("title", "Wire 列表演示 - CRUD + 分页 + 精准刷新")
                 .once("page", 1)
                 .once("perPage", 5)
-                .once("items", new ArrayList<>())   // 空壳，等前端懒加载
+                .once("items", new ArrayList<>())   // 占位，下面 loadList 会填充真实数据
                 .once("total", DB.size())
-                .once("paginatorHtml", "")
-                .responseWire();
+                .once("paginatorHtml", "");
+        loadList(c);   // 首屏直接渲染真实数据，避免依赖前端懒加载导致列表空白
+        return c.responseWire();
     }
 
     /**
@@ -120,6 +121,9 @@ public class WireListDemoController implements Controllers {
                 // 第1点 / 第7点：刷新 list section（别人改了后端、或懒加载首次拉取），不改动数据
                 .action("$refresh", c -> loadList(c))
 
+                // 输入框实时同步（$sync）时也重新加载列表，让过滤/改名即时反映
+                .action("$sync", c -> loadList(c))
+
                 // 第6点：分页（page/perPage 来自前端拦截分页链接解析出的 params，已合并进 data）
                 .action("$paginate", c -> loadList(c))
                 .responseUpdate();
@@ -130,7 +134,9 @@ public class WireListDemoController implements Controllers {
      * 这一步把查库结果塞回 data，前端只会收到 list section 的更新。
      */
     private static void loadList(WireService c) {
+        // 分页字段统一用 pageNum（前端分页拦截器传入），fallback 到 page（首屏 once 默认值）
         int page = c.getInt("pageNum");
+        if (page < 1) page = c.getInt("page");
         int perPage = c.getInt("perPage");
         if (page < 1) page = 1;
         if (perPage < 1) perPage = 5;

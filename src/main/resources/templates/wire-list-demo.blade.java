@@ -59,7 +59,7 @@
                         <tr data-wire-key="{{ $item['id'] }}">
                             <td style="padding:6px;">
                                 <label class="mdui-checkbox">
-                                    <input type="checkbox" wire:click="updateItem" wire:param-id="{{ $item['id'] }}" wire:param-done="1" {{ $item['done'] ? 'checked' : '' }} />
+                                    <input type="checkbox" wire:model="done" {{ $item['done'] ? 'checked' : '' }} wire:click="updateItem" wire:param-id="{{ $item['id'] }}" />
                                     <i class="mdui-icon"></i>
                                 </label>
                             </td>
@@ -67,11 +67,10 @@
                             <td style="padding:6px;">
                                 <input class="mdui-textfield-input" type="text"
                                        wire:model="name" value="{{ $item['name'] }}" style="min-width:160px;" />
-                                {{-- 保存改名（演示 UPDATE 单条） --}}
+                                {{-- 保存改名（演示 UPDATE 单条）。name 取自同行的 wire:model="name" 输入框，
+                                     由 wire.js 在点击时按所在 [data-wire-key] 行自动收集，避免用服务端旧值覆盖用户输入 --}}
                                 <button wire:click="updateItem"
                                         wire:param-id="{{ $item['id'] }}"
-                                        wire:param-name="{{ $item['name'] }}"
-                                        wire:param-done="{{ $item['done'] ? '1' : '0' }}"
                                         class="mdui-btn mdui-btn-dense mdui-ripple">保存改名</button>
                             </td>
                             <td style="padding:6px;">
@@ -109,21 +108,5 @@
     </div>
 </div>
 
-{{-- 第4点：懒加载。页面 load 后前端自动拉取 list（初始 page() 只给空壳） --}}
-<script>
-(function () {
-    function lazyLoad() {
-        if (typeof Wire === 'undefined' || !Wire.components || !Wire.components.length) {
-            setTimeout(lazyLoad, 50);
-            return;
-        }
-        Wire.refresh(['list']);   // 等价于后端 $refresh，只刷 list section
-    }
-    if (document.readyState === 'complete') {
-        lazyLoad();
-    } else {
-        window.addEventListener('load', lazyLoad);
-    }
-})();
-</script>
+{{-- 第4点：懒加载已由 wire.js 的 initLazy() 自动处理（页面 load 后对 wire:lazy 的 section 自动发 $refresh），无需手写脚本 --}}
 @endsection
