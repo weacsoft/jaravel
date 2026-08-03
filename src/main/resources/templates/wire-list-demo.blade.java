@@ -11,7 +11,7 @@
             • 增删改走 <code>update</code> 统一通道，操作后重新加载权威列表；<br>
             • 每行的 <code>data-wire-key</code> 让前端做最小化 diff，勾选/输入框状态在刷新后保留；<br>
             • 分页器使用原生 Laravel 分页（<code>$paginator->links('pageinator')</code>），外层包 <code>wire:pagination wire:target="list"</code> 后点击不整页跳；<br>
-            • 列表初始为空（懒加载演示）：页面 load 后前端自动 <code>Wire.refresh(['list'])</code> 拉取。
+            • 列表首屏直接由后端渲染真实数据（无懒加载闪烁）。
         </p>
 
         {{-- 新增表单（演示第5点：INSERT） --}}
@@ -35,7 +35,7 @@
              前端 Wire.refresh(['list']) 只拉取这块；后端按属性从 content 中截取返回。 --}}
         {{-- 第4点：wire:lazy 声明式懒加载。首次 GET 由后端 once 空壳渲染 spinner 占位，
              前端页面 load 后自动 Wire.refresh(['list']) 拉真实数据，无需手写 if/else。 --}}
-        <div wire:section="list" wire:lazy class="mdui-card" style="margin-top: 16px;">
+        <div wire:section="list" class="mdui-card" style="margin-top: 16px;">
             <div class="mdui-card-header">
                 <div class="mdui-card-header-title">任务列表（共 {{ $total }} 项，每页 {{ $perPage }}）</div>
             </div>

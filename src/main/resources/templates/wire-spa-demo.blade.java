@@ -47,14 +47,14 @@
                             <tr data-wire-key="{{ $item['id'] }}">
                                 <td style="padding:6px;">
                                     <label class="mdui-checkbox">
-                                        <input type="checkbox" wire:click="updateItem" wire:param-id="{{ $item['id'] }}" wire:param-done="1" {{ $item['done'] ? 'checked' : '' }} />
+                                        <input type="checkbox" wire:click="updateItem" wire:param-id="{{ $item['id'] }}" {{ $item['done'] ? 'checked' : '' }} />
                                         <i class="mdui-icon"></i>
                                     </label>
                                 </td>
                                 <td style="padding:6px;">{{ $item['id'] }}</td>
                                 <td style="padding:6px;">
                                     <input class="mdui-textfield-input" type="text" wire:model="name" value="{{ $item['name'] }}" style="min-width:160px;" />
-                                    <button wire:click="updateItem" wire:param-id="{{ $item['id'] }}" wire:param-name="{{ $item['name'] }}" wire:param-done="{{ $item['done'] ? '1' : '0' }}" class="mdui-btn mdui-btn-dense mdui-ripple">改名</button>
+                                    <button wire:click="updateItem" wire:param-id="{{ $item['id'] }}" class="mdui-btn mdui-btn-dense mdui-ripple">改名</button>
                                 </td>
                                 <td style="padding:6px;">
                                     <button wire:click="deleteItem" wire:param-id="{{ $item['id'] }}" class="mdui-btn mdui-btn-dense mdui-color-red mdui-ripple">删除</button>

@@ -93,9 +93,13 @@ public class WireListDemoController implements Controllers {
 
                 // 第5点：新增一条（模拟 INSERT），然后重新加载权威列表
                 .action("addItem", c -> {
+                    String raw = c.getStr("name");
+                    if (raw == null || raw.trim().isEmpty()) {
+                        return; // 空名称不插入，避免无效数据
+                    }
                     int id = SEQ.incrementAndGet();
-                    c.set("name", c.getStr("name").trim());
-                    DB.put(id, new Item(id, c.getStr("name").isEmpty() ? ("任务 " + id) : c.getStr("name"), false));
+                    String name = raw.trim();
+                    DB.put(id, new Item(id, name, false));
                     loadList(c);
                 })
 
@@ -111,8 +115,14 @@ public class WireListDemoController implements Controllers {
                     int id = c.getInt("id");
                     Item row = DB.get(id);
                     if (row != null) {
-                        row.name = c.getStr("name");
-                        row.done = c.getStr("done").equals("1") || c.getStr("done").equals("true");
+                        String name = c.getStr("name");
+                        if (name != null && !name.trim().isEmpty()) {
+                            row.name = name.trim();
+                        }
+                        String done = c.getStr("done");
+                        if (done != null) {
+                            row.done = done.equals("1") || done.equals("true");
+                        }
                         DB.put(id, row);
                     }
                     loadList(c);

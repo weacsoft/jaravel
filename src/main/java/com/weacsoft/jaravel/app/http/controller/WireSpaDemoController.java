@@ -145,6 +145,8 @@ public class WireSpaDemoController implements Controllers {
                     }
                     loadList(c);
                 })
+                // 输入框实时同步（$sync，wire:model 自动触发）只刷新列表，绝不能误新增/误改数据
+                .action("$sync", c -> loadList(c))
                 .responseUpdate();
     }
 }
