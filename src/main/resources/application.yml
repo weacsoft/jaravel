@@ -85,7 +85,7 @@ jaravel:
   # Wire 部分更新模块（Laravel Livewire 风格）
   wire:
     auto-inject-js: true
-    js-path: /static/js/wire-lib.js
+    js-path: /static/js/wire-lib.js?v=2
   # ===== 认证（auth） =====
   # 本项目的 guards / providers 用【声明式】写在 AuthConfig.java 里（优先级最高）。
   # 这里只覆盖默认守卫名。
@@ -123,7 +123,7 @@ jaravel:
   migration:
     enabled: true
     table: migrations
-    auto-run: false
+    auto-run: true
     source: classpath
   # ===== 缓存（Cache 多 Store 抽象） =====
   # 驱动按需装配：只有配置在 stores 里的 store 才会创建，驱动实例在 store 创建时才实例化。

@@ -7,7 +7,7 @@
     <div class="page-content">
         <h2 class="section-title">{{ $title }}</h2>
         <p class="hint">
-            本页演示：静态数组模拟数据库（无真实 DB）。<br>
+            本页演示：基于 SQLite 真实数据库（database 模块 BaseModel）。<br>
             • 增删改走 <code>update</code> 统一通道，操作后重新加载权威列表；<br>
             • 每行的 <code>data-wire-key</code> 让前端做最小化 diff，勾选/输入框状态在刷新后保留；<br>
             • 分页器使用原生 Laravel 分页（<code>$paginator->links('pageinator')</code>），外层包 <code>wire:pagination wire:target="list"</code> 后点击不整页跳；<br>
