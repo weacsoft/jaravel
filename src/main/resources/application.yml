@@ -293,6 +293,28 @@ jaravel:
     # background-images:
     #   - classpath:captcha/bg1.jpg
     #   - classpath:captcha/bg2.jpg
+    # ------------------------------------------------------------------
+    # 场景白名单：前端只能通过 ?scene=<name> 从下列已声明场景中「选择」，
+    # 不能传 tolerance / length / clickTargetCount 等任何具体数值。
+    # 未命中白名单的场景名一律回落到上面的全局默认配置，不会降低难度。
+    # 场景中未声明的字段自动继承全局配置。
+    # ------------------------------------------------------------------
+    scenes:
+      login:
+        description: 登录场景 — 更小容差、更强干扰
+        tolerance: 5.0
+        interference-level: 4
+      register:
+        description: 注册场景 — 点选 6 个文字
+        click-target-count: 6
+        click-decoy-count: 4
+      comment:
+        description: 评论场景 — 干扰较弱，字符数 4
+        length: 4
+        interference-level: 2
+      demo-arithmetic:
+        description: 演示用 — 算术验证码 5 位结果
+        length: 5
 
 logging:
   level:

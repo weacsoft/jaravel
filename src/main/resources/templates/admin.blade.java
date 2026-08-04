@@ -12,7 +12,7 @@
 ============================================================ --}}
 
 @section('head')
-<script src="/js/jaravel-captcha.js"></script>
+<script src="/jaravel-captcha.js"></script>
 <style>
     /* ===== 管理后台专属样式（基于 mdui 1.x） ===== */
     /* 页面头部栏（标题 + 用户信息） */

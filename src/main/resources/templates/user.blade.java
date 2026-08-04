@@ -7,7 +7,7 @@
 
 {{-- 页面专属样式 --}}
 @section('head')
-<script src="/js/jaravel-captcha.js"></script>
+<script src="/jaravel-captcha.js"></script>
 <style>
     /* ===== 登录 / 注册视图 ===== */
     .login-wrap {
