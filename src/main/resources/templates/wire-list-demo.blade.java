@@ -24,7 +24,7 @@
                     <label class="mdui-textfield-label">任务名称</label>
                     <input class="mdui-textfield-input" type="text" wire:model="name" value="{{ $name }}" placeholder="输入任务名..." />
                 </div>
-                <button wire:click="addItem" class="mdui-btn mdui-btn-raised mdui-color-theme mdui-ripple">
+                <button wire:click="addItem" wire:target="list" class="mdui-btn mdui-btn-raised mdui-color-theme mdui-ripple">
                     <i class="mdui-icon material-icons" style="margin-right: 4px;">add</i>添加
                 </button>
                 <span wire:loading wire:target="addItem" class="mdui-spinner" style="display:none;"></span>
@@ -59,7 +59,7 @@
                         <tr data-wire-key="{{ $item['id'] }}">
                             <td style="padding:6px;">
                                 <label class="mdui-checkbox">
-                                    <input type="checkbox" wire:model="done" {{ $item['done'] ? 'checked' : '' }} wire:click="updateItem" wire:param-id="{{ $item['id'] }}" />
+                                    <input type="checkbox" wire:model="done" wire:target="list" {{ $item['done'] ? 'checked' : '' }} wire:click="updateItem" wire:param-id="{{ $item['id'] }}" />
                                     <i class="mdui-icon"></i>
                                 </label>
                             </td>
@@ -69,12 +69,12 @@
                                        wire:model="name" value="{{ $item['name'] }}" style="min-width:160px;" />
                                 {{-- 保存改名（演示 UPDATE 单条）。name 取自同行的 wire:model="name" 输入框，
                                      由 wire.js 在点击时按所在 [data-wire-key] 行自动收集，避免用服务端旧值覆盖用户输入 --}}
-                                <button wire:click="updateItem"
+                                <button wire:click="updateItem" wire:target="list"
                                         wire:param-id="{{ $item['id'] }}"
                                         class="mdui-btn mdui-btn-dense mdui-ripple">保存改名</button>
                             </td>
                             <td style="padding:6px;">
-                                <button wire:click="deleteItem" wire:param-id="{{ $item['id'] }}"
+                                <button wire:click="deleteItem" wire:target="list" wire:param-id="{{ $item['id'] }}"
                                         class="mdui-btn mdui-btn-dense mdui-color-red mdui-ripple">删除</button>
                             </td>
                         </tr>
