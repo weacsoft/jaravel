@@ -28,6 +28,21 @@
         .badge-success { background: #c8e6c9; color: #1b5e20; }
         .badge-error { background: #ffcdd2; color: #b71c1c; }
         .hidden { display: none; }
+        {{-- Wire 命名组件（toast / confirm）样式（全局，确保 outlet 内挂载的组件始终有样式） --}}
+        .wc-toast{position:fixed; top:16px; right:16px; z-index:9999; display:flex; align-items:center; gap:10px;
+            max-width:360px; padding:12px 14px; border-radius:8px; background:#323232; color:#fff;
+            box-shadow:0 4px 16px rgba(0,0,0,.24); font-size:14px; line-height:1.4;}
+        .wc-toast--success{background:#2e7d32;} .wc-toast--info{background:#1976d2;}
+        .wc-toast--warning{background:#f57c00;} .wc-toast--error{background:#c62828;}
+        .wc-toast__icon{font-size:18px;} .wc-toast__msg{flex:1;}
+        .wc-toast__close{border:0; background:transparent; color:#fff; font-size:18px; cursor:pointer; line-height:1; opacity:.8;}
+        .wc-toast__close:hover{opacity:1;}
+        .wc-confirm-mask{position:fixed; inset:0; z-index:9998; display:flex; align-items:center; justify-content:center;
+            background:rgba(0,0,0,.45); transition:opacity .2s ease;}
+        .wc-confirm{width:320px; max-width:90vw; background:#fff; border-radius:10px; padding:20px; box-shadow:0 8px 30px rgba(0,0,0,.3);}
+        .wc-confirm__title{font-size:16px; font-weight:600; margin-bottom:8px;}
+        .wc-confirm__body{font-size:14px; color:#555; margin-bottom:16px;}
+        .wc-confirm__actions{display:flex; justify-content:flex-end; gap:10px;}
         footer { text-align: center; padding: 32px 24px; color: #9e9e9e; font-size: 13px; }
         {{-- 抽屉导航栏内部样式 --}}
         .drawer-header { padding: 16px 16px 8px; }

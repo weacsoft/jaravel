@@ -52,6 +52,21 @@ public class Web {
         Route.get("/wire-spa-demo", "WireSpaDemoController::page").name("wire.spa.demo");
         Route.post("/api/wire/spa-demo", "WireSpaDemoController::update");
 
+        // ===== Wire 命名组件（toast / confirm）演示 =====
+        // WireOutlet 中间件已挂在 Web 组末尾，自动补齐 outlet 容器 + 首屏 bootstrap + 前端运行时；
+        // 组件在 jaravel.wire.components 中注册（toast / confirm）。
+        Route.get("/wire-component-demo", "WireComponentDemoController::page").name("wire.component.demo");
+        Route.post("/api/wire-component-demo", "WireComponentDemoController::update");
+        Route.get("/wire-component-plain", "WireComponentDemoController::plain").name("wire.component.plain");
+
+        // ===== PJAX 无感切换演示：两个完全独立的页面 =====
+        // 各自独立路径 + 独立控制器类 + 独立 blade 模板文件，彼此零耦合。
+        // 控制器里没有任何 PJAX 代码，也没有为切换新增端点：
+        // 首次直接访问返回完整页面，从已加载页面点链接过来只替换变化区域，
+        // 全部由全局 PjaxMiddleware + ResponseBuilder 自动完成。
+        Route.get("/home", "PjaxHomeController::index").name("pjax.home");
+        Route.get("/list", "PjaxListController::index").name("pjax.list");
+
         // 数据库文件存储演示（driver: database）：上传/预览/下载/删除
         Route.get("/demo/storage", "StorageDemoController::index").name("storage.demo");
         Route.post("/demo/storage/upload", "StorageDemoController::upload");
