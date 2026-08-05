@@ -20,14 +20,19 @@ import java.util.Set;
  * 主要能力：
  * <ul>
  *     <li>{@link #generate(String)} 生成指定类型的验证码；</li>
- *     <li>{@link #verify(String, String, String)} 校验用户输入；</li>
+ *     <li>{@link #verify(String, String)} 用「合并凭证 + 用户输入」两个参数校验；</li>
  *     <li>{@link #getAvailableTypes()} 获取所有已注册的验证码类型。</li>
  * </ul>
+ * <p>
+ * 校验只接收<b>两个</b>参数：合并凭证 {@code key}（生成时下发，格式 {@code type.captchaKey}）
+ * 与用户输入。验证码类型已编码在凭证中，因此可以把验证码与登录表单等业务字段
+ * 一次性提交、一次性校验，不需要「先校验验证码、再提交业务」的两段式请求
+ * （两段式存在拿到"已通过"状态后重放业务请求的时间窗）。
  * <p>
  * 同时支持静态调用，无需注入即可使用：
  * <pre>
  *   CaptchaResult result = CaptchaService.generateStatic("number");
- *   boolean ok = CaptchaService.verifyStatic("number", captchaKey, userInput);
+ *   boolean ok = CaptchaService.verifyStatic(result.getKey(), userInput);
  * </pre>
  *
  * @see CaptchaManager
@@ -72,42 +77,45 @@ public class CaptchaService {
     }
 
     /**
-     * 校验验证码。
+     * 用<b>合并凭证</b>校验验证码。
+     * <p>
+     * 合并凭证 {@code key} 由生成时返回（{@link CaptchaResult#getKey()}，
+     * 格式 {@code type + "." + captchaKey}），内部自动解析类型并分发，
+     * 调用方无需再传 {@code type}。
+     * 这样验证码可与其他业务表单字段放在<b>同一次请求</b>里一起提交、一起校验，
+     * 避免「先单独校验验证码、再提交业务数据」的二次提交安全漏洞。
      *
-     * @param type        验证码类型
-     * @param captchaKey  生成时返回的验证码 key
-     * @param userInput   用户输入（文本输入，或包含 value+trajectory 的 JSON，或包含 clicks 的 JSON）
+     * @param key        合并凭证（生成时返回的 {@code key} 字段）
+     * @param userInput  用户输入（文本，或含 value+trajectory 的 JSON，或含 clicks 的 JSON）
      * @return 校验通过返回 true，否则返回 false
      */
-    public boolean verify(String type, String captchaKey, String userInput) {
-        return captchaManager.verify(type, captchaKey, userInput);
+    public boolean verify(String key, String userInput) {
+        return captchaManager.verify(key, userInput);
     }
 
     /**
-     * 校验验证码（详细结果）。
-     * <p>
-     * 区分"验证失败"和"验证码已被使用"两种情况，便于前端给出不同的提示。
+     * 用合并凭证校验验证码（带运行时加密密钥）。
      *
-     * @param type        验证码类型
-     * @param captchaKey  验证码 key
-     * @param userInput   用户输入
-     * @return 验证结果（含是否通过、是否已被使用）
-     */
-    public VerifyResult verifyDetailed(String type, String captchaKey, String userInput) {
-        return captchaManager.verifyDetailed(type, captchaKey, userInput, null, null);
-    }
-
-    /**
-     * 校验验证码（带运行时加密密钥）。
-     *
-     * @param type          验证码类型
-     * @param captchaKey    验证码 key
+     * @param key           合并凭证
      * @param userInput     用户输入
      * @param encryptionKey 运行时加密密钥
      * @return 校验通过返回 true，否则返回 false
      */
-    public boolean verify(String type, String captchaKey, String userInput, String encryptionKey) {
-        return captchaManager.verify(type, captchaKey, userInput, encryptionKey);
+    public boolean verify(String key, String userInput, String encryptionKey) {
+        return captchaManager.verify(key, userInput, encryptionKey);
+    }
+
+    /**
+     * 用合并凭证校验验证码（详细结果）。
+     * <p>
+     * 区分"验证失败"和"验证码已被使用"两种情况，便于前端给出不同的提示。
+     *
+     * @param key        合并凭证（生成时返回的 {@code key} 字段）
+     * @param userInput  用户输入
+     * @return 验证结果（含是否通过、是否已被使用）
+     */
+    public VerifyResult verifyDetailed(String key, String userInput) {
+        return captchaManager.verifyDetailed(key, userInput, null, null);
     }
 
     /**
@@ -157,28 +165,26 @@ public class CaptchaService {
     }
 
     /**
-     * 静态方法：校验验证码。
+     * 静态方法：用合并凭证校验验证码。
      *
-     * @param type       验证码类型
-     * @param captchaKey 验证码 key
-     * @param userInput  用户输入
+     * @param key       合并凭证（生成时返回的 {@code key} 字段）
+     * @param userInput 用户输入
      * @return 校验通过返回 true，否则返回 false
      */
-    public static boolean verifyStatic(String type, String captchaKey, String userInput) {
-        return CaptchaManager.verifyStatic(type, captchaKey, userInput);
+    public static boolean verifyStatic(String key, String userInput) {
+        return CaptchaManager.verifyStatic(key, userInput);
     }
 
     /**
-     * 静态方法：校验验证码（带运行时加密密钥）。
+     * 静态方法：用合并凭证校验验证码（带运行时加密密钥）。
      *
-     * @param type          验证码类型
-     * @param captchaKey    验证码 key
+     * @param key           合并凭证
      * @param userInput     用户输入
      * @param encryptionKey 运行时加密密钥
      * @return 校验通过返回 true，否则返回 false
      */
-    public static boolean verifyStatic(String type, String captchaKey, String userInput, String encryptionKey) {
-        return CaptchaManager.verifyStatic(type, captchaKey, userInput, encryptionKey);
+    public static boolean verifyStatic(String key, String userInput, String encryptionKey) {
+        return CaptchaManager.verifyStatic(key, userInput, encryptionKey);
     }
 
     // ==================== 前端资源（JS/CSS 内容） ====================

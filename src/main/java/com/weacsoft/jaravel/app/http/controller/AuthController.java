@@ -77,16 +77,19 @@ public class AuthController implements Controllers {
 
     /**
      * 管理员登录（用户名 + 密码 + 验证码），登入 admin guard，返回 JWT token。
+     * <p>
+     * 验证码与账号密码在<b>同一次请求</b>里提交：{@code captchaKey} 是生成接口
+     * 下发的合并凭证（{@code type.captchaKey}），配合 {@code captchaInput}
+     * 两个参数即可完成校验，无需前端先单独调一次验证码校验接口。
      */
     public Response adminLogin(Request request) {
         String username = request.input("username");
         String password = request.input("password");
-        String captchaType = request.input("captchaType", "rotate");
         String captchaKey = request.input("captchaKey");
         String captchaInput = request.input("captchaInput");
 
-        // 验证码校验（无状态：直接验证 captchaKey + 用户输入）
-        if (!captchaService.verify(captchaType, captchaKey, captchaInput)) {
+        // 验证码校验（无状态：合并凭证 + 用户输入两个参数）
+        if (!captchaService.verify(captchaKey, captchaInput)) {
             return ResponseBuilder.error(403, "验证码校验失败或已过期，请重新完成验证");
         }
 
@@ -147,16 +150,19 @@ public class AuthController implements Controllers {
 
     /**
      * 用户登录（工号 + 密码），登入 api guard，返回 JWT token。
+     * <p>
+     * 验证码与账号密码在<b>同一次请求</b>里提交：{@code captchaKey} 是生成接口
+     * 下发的合并凭证（{@code type.captchaKey}），配合 {@code captchaInput}
+     * 两个参数即可完成校验。
      */
     public Response userLogin(Request request) {
         String number = request.input("number");
         String password = request.input("password");
-        String captchaType = request.input("captchaType", "rotate");
         String captchaKey = request.input("captchaKey");
         String captchaInput = request.input("captchaInput");
 
-        // 验证码校验（无状态：直接验证 captchaKey + 用户输入）
-        if (!captchaService.verify(captchaType, captchaKey, captchaInput)) {
+        // 验证码校验（无状态：合并凭证 + 用户输入两个参数）
+        if (!captchaService.verify(captchaKey, captchaInput)) {
             return ResponseBuilder.error(403, "验证码校验失败或已过期，请重新完成验证");
         }
 

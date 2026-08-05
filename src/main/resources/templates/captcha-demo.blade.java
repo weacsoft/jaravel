@@ -70,8 +70,11 @@
             <p><strong>弹层模式：</strong><code>Captcha.init('divId', {type:'slider', modal:true})</code> 再调 <code>.show()</code></p>
             <p><strong>事件监听：</strong><code>.on('beforeGet', fn)</code> / <code>.on('afterGet', fn)</code> / <code>.on('complete', fn)</code> / <code>.on('show'|'hide', fn)</code></p>
             <p><strong>beforeGet</strong> — 获取验证码前（含刷新），参数：<code>(type)</code></p>
-            <p><strong>afterGet</strong> — 验证码加载完成后，参数：<code>(captchaKey, captchaData)</code></p>
-            <p><strong>complete</strong> — 用户完成前端验证操作，参数：<code>(captchaKey, captchaInput)</code></p>
+            <p><strong>afterGet</strong> — 验证码加载完成后，参数：<code>(key, captchaData)</code></p>
+            <p><strong>complete</strong> — 用户完成前端验证操作，参数：<code>(key, captchaInput)</code></p>
+            <p><strong>合并凭证：</strong><code>key</code> 格式为 <code>type.captchaKey</code>，已内含验证码类型；
+               校验接口只收 <code>{key, input}</code> 两个参数，可与登录表单等业务字段<strong>一次性提交</strong>，
+               避免「先验证码、后业务」两段式提交产生的时间窗漏洞</p>
             <p><strong>注意：</strong>前端不提交验证到后端，由业务方在 complete 事件中决定后续处理</p>
         </div>
     </div>
@@ -275,13 +278,16 @@ function startCaptcha(key) {
     container.style.display = modal ? 'none' : 'block';
     document.getElementById(key + '-start').style.display = modal ? '' : 'none';
 
+    // 注意：这里【不传】 encryptionType / encryptionKey。
+    // 加密类型与密钥一律以后端 generate 接口下发的 encType / encKey 为准 ——
+    // 后端启用全局应用密钥兜底（jaravel.key）后，实际生效的密钥可能与
+    // jaravel.captcha.encryption-key 的静态值不同；前端若硬编码密钥就会
+    // 与服务端解密所用的密钥不一致，导致校验恒失败。
     var instance = Captcha.init(key + '-container', {
         type: type,
         scene: captchaScenes[key],       // 只传场景名
         modal: modal,
-        modalTitle: '安全验证',
-        encryptionType: 'aes',
-        encryptionKey: 'jaravel-captcha-default-key'
+        modalTitle: '安全验证'
     });
 
     // 注册事件监听器
@@ -289,17 +295,18 @@ function startCaptcha(key) {
         console.log('[Demo] beforeGet: type=' + captchaType);
     });
 
-    instance.on('afterGet', function(captchaKey, captchaData) {
-        console.log('[Demo] afterGet: key=' + captchaKey);
+    instance.on('afterGet', function(captchaCredential, captchaData) {
+        console.log('[Demo] afterGet: key=' + captchaCredential);
     });
 
-    instance.on('complete', function(captchaKey, captchaInput) {
+    instance.on('complete', function(captchaCredential, captchaInput) {
         // 用户已完成前端验证操作
-        // captchaKey: 验证码标识；captchaInput: 加密后的用户输入
+        // captchaCredential: 合并凭证 key（type.captchaKey）；captchaInput: 加密后的用户输入
+        // 业务方把这两个值随业务表单一起 POST，后端 verify(key, input) 一次校验
         document.getElementById(key + '-result').innerHTML =
             '<div class="result-chip result-ok"><i class="mdui-icon material-icons">check_circle</i> 已完成前端验证</div>' +
-            '<div style="margin-top:8px;font-size:13px;color:#666;word-break:break-all;">captchaKey: ' + captchaKey.substring(0, 32) + '...</div>';
-        console.log('[Demo] complete: key=' + captchaKey + ', input=' + captchaInput);
+            '<div style="margin-top:8px;font-size:13px;color:#666;word-break:break-all;">key: ' + captchaCredential.substring(0, 40) + '...</div>';
+        console.log('[Demo] complete: key=' + captchaCredential + ', input=' + captchaInput);
     });
 
     instance.on('hide', function() {

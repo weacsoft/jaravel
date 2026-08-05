@@ -68,7 +68,10 @@ public class CaptchaController implements Controllers {
      * </ul>
      * 其余任何查询参数一律被忽略。
      * <p>
-     * 响应格式：{code: 200, data: {captchaKey, type, imageBase64, expireTime, extra}}
+     * 响应格式：{code: 200, data: {key, captchaKey, type, imageBase64, expireTime, encType, encKey, extra}}
+     * <p>
+     * 返回的 {@code key} 为合并凭证（{@code type + "." + captchaKey}），前端校验时只需提交
+     * 这一个 {@code key} 与用户输入即可，无需再传 {@code type}。
      */
     public Response generate(Request request) {
         String type = request.get("type", "rotate");
@@ -81,10 +84,13 @@ public class CaptchaController implements Controllers {
                     : captchaService.generate(type);
 
             Map<String, Object> data = new LinkedHashMap<>();
+            data.put("key", result.getKey());
             data.put("captchaKey", result.getCaptchaKey());
             data.put("type", result.getType());
             data.put("imageBase64", result.getImageBase64());
             data.put("expireTime", result.getExpireTime());
+            data.put("encType", result.getEncType());
+            data.put("encKey", result.getEncKey());
             data.put("extra", result.getExtra());
 
             Map<String, Object> ok = new LinkedHashMap<>();
@@ -123,30 +129,37 @@ public class CaptchaController implements Controllers {
     /**
      * 校验验证码。
      * <p>
-     * 请求体 JSON：{ type: "rotate", captchaKey: "xxx", input: "45" 或 JSON }
+     * 请求体 JSON——<b>只有两个字段</b>：
+     * <pre>
+     * { key: "&lt;type&gt;.&lt;captchaKey&gt;", input: "45" 或 JSON }
+     * </pre>
+     * {@code key} 即生成接口下发的合并凭证，已内含验证码类型，无需再传 {@code type}。
+     * <p>
      * 成功响应：{code: 200, msg: "验证通过"}
      * 失败响应：HTTP 403，{code: 403, msg: "验证码校验失败，请重试"}
      * 已使用响应：HTTP 410，{code: 410, msg: "验证码已被使用，请刷新后重试"}
+     * <p>
+     * <b>安全建议</b>：直接把 {@code key} 与用户输入连同其它业务字段（如用户名、密码）
+     * 放在<b>同一次请求</b>里提交并一起校验，避免「先单独校验验证码、再提交业务数据」
+     * 这种分两次提交带来的会话伪造 / 绕过风险。
      */
     public Response verify(Request request) {
         try {
             Map<String, Object> all = request.all();
 
-            String type = all.get("type") != null ? all.get("type").toString() : "rotate";
-            String captchaKey = all.get("captchaKey") != null ? all.get("captchaKey").toString() : "";
+            String key = all.get("key") != null ? all.get("key").toString() : "";
             String input = all.get("input") != null ? all.get("input").toString() : "";
 
-            if (captchaKey.isEmpty()) {
-                return jsonError(400, "缺少 captchaKey");
-            }
             if (input.isEmpty()) {
                 return jsonError(400, "缺少验证输入");
             }
+            if (key.isEmpty()) {
+                return jsonError(400, "缺少验证码凭证 key");
+            }
 
-            log.debug("[captcha] verify type={}, key={}, input={}", type, captchaKey,
-                    input.length() > 100 ? input.substring(0, 100) + "..." : input);
+            // 只需「合并凭证 + 用户输入」两个参数，类型已编码在凭证里
+            VerifyResult result = captchaService.verifyDetailed(key, input);
 
-            VerifyResult result = captchaService.verifyDetailed(type, captchaKey, input);
             if (result.isPassed()) {
                 Map<String, Object> ok = new LinkedHashMap<>();
                 ok.put("code", 200);

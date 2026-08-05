@@ -34,6 +34,9 @@ spring:
     # password: ""
 
 jaravel:
+  # 全局应用密钥（由 `artisan key:generate` 生成，Base64 编码 32 字节）
+  # captcha / jwt / http-cookies 等模块未单独配置密钥时统一回退到此密钥
+  key: kF+bqyeMahQ+Inv0gbMDoH0MMC5F9AhBXrhUb8y4cPM=
   # 视图引擎配置（jblade Blade 模板引擎）
   # 新设计：框架只依赖 View 抽象，通过 @RegisterView 声明 + 本配置选择 + jblade 兜底注册。
   # 控制器用 ResponseBuilder.view(...) 渲染时由 ViewFacade 自动取当前激活实现，无需手动 setBladeEngine。

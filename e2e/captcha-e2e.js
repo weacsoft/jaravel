@@ -259,18 +259,23 @@ async function dragHandle(page, touch, targetClientX) {
     }
 }
 
-/** 调用后端校验接口 */
-async function verifyOnServer(page, type, key, input) {
-    return page.evaluate(async ({ type, key, input, base }) => {
+/**
+ * 调用后端校验接口。
+ *
+ * 只提交「合并凭证 key」+「用户输入 input」两个参数——不再传 type / captchaKey，
+ * 与 CaptchaManager.verify(key, input) 的两参签名一致。
+ */
+async function verifyOnServer(page, key, input) {
+    return page.evaluate(async ({ key, input, base }) => {
         const r = await fetch(base + '/api/captcha/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, captchaKey: key, input })
+            body: JSON.stringify({ key, input })
         });
         let body = null;
         try { body = await r.json(); } catch (e) { body = { parseError: true }; }
         return { status: r.status, body };
-    }, { type, key, input, base: BASE });
+    }, { key, input, base: BASE });
 }
 
 // ====================================================================
@@ -282,7 +287,8 @@ async function testSlider(page, ctxName, touch) {
     console.log(`\n  [滑动验证码 · 闭环校验]`);
     await createInstance(page, {
         type: 'slider', scene: 'login',
-        encryptionType: 'aes', encryptionKey: 'jaravel-captcha-default-key'
+        // 不显式指定加密参数：组件自动采用后端 generate 下发的 encType / encKey
+        encryptionType: 'aes'
     });
 
     const s0 = await snapshot(page);
@@ -318,13 +324,13 @@ async function testSlider(page, ctxName, touch) {
     assert(!!s1.completed, `${ctxName} complete 事件已触发`);
 
     if (s1.completed) {
-        const res = await verifyOnServer(page, 'slider', s1.completed.key, s1.completed.input);
+        const res = await verifyOnServer(page, s1.completed.key, s1.completed.input);
         assert(res.status === 200 && res.body.code === 200,
             `${ctxName} 后端校验通过（真闭环）`,
             `HTTP ${res.status} ${JSON.stringify(res.body)}`);
 
         // 防复用：同一个 key 再验一次必须被拒
-        const again = await verifyOnServer(page, 'slider', s1.completed.key, s1.completed.input);
+        const again = await verifyOnServer(page, s1.completed.key, s1.completed.input);
         assert(again.status === 410,
             `${ctxName} 防复用生效（重复提交返回 410）`,
             `HTTP ${again.status}`);
@@ -412,7 +418,8 @@ async function testNumber(page, ctxName) {
     console.log(`\n  [数字验证码 · 输入链路]`);
     await createInstance(page, {
         type: 'number', scene: 'comment',
-        encryptionType: 'aes', encryptionKey: 'jaravel-captcha-default-key'
+        // 不显式指定加密参数：组件自动采用后端 generate 下发的 encType / encKey
+        encryptionType: 'aes'
     });
     await page.fill('.jc-input', 'ab12');
     await page.press('.jc-input', 'Enter');
@@ -421,7 +428,7 @@ async function testNumber(page, ctxName) {
     const s = await snapshot(page);
     assert(!!s.completed, `${ctxName} 字符输入触发 complete`);
     if (s.completed) {
-        const res = await verifyOnServer(page, 'number', s.completed.key, s.completed.input);
+        const res = await verifyOnServer(page, s.completed.key, s.completed.input);
         // 随便输的答案几乎必错，但链路必须打通（403 而不是 400/500）
         assert(res.status === 403 || res.status === 200,
             `${ctxName} 校验链路连通`,
