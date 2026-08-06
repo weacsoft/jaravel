@@ -49,6 +49,8 @@
     </div>
     <p class="muted" style="margin-top:12px;">服务端渲染时刻：<span class="kv">{{ $renderedAt }}</span></p>
 </div>
+
+@include('pjax.rt-probe', ['page' => 'list'])
 @endsection
 
 @section('scratch')

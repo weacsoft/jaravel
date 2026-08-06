@@ -27,6 +27,8 @@
     </table>
     <p style="margin-top:16px;"><a href="/list" class="mdui-btn mdui-color-indigo mdui-ripple">前往任务列表 →</a></p>
 </div>
+
+@include('pjax.rt-probe', ['page' => 'home'])
 @endsection
 
 @section('scratch')
