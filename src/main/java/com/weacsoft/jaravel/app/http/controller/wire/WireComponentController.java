@@ -3,6 +3,7 @@ package com.weacsoft.jaravel.app.http.controller.wire;
 import com.weacsoft.jaravel.vendor.http.controller.Controllers;
 import com.weacsoft.jaravel.vendor.http.controller.request.Request;
 import com.weacsoft.jaravel.vendor.http.controller.response.Response;
+import com.weacsoft.jaravel.vendor.wire.WireRequest;
 import com.weacsoft.jaravel.vendor.wire.WireResponse;
 
 import java.util.Map;
@@ -21,7 +22,8 @@ public class WireComponentController implements Controllers {
     }
 
     public Response update(Request request) {
-        String action = request.get("action");
+        WireRequest wr = WireRequest.from(request);
+        String action = wr.getAction();
         WireResponse resp = WireResponse.of();
 
         if ("toast_info".equals(action)) {

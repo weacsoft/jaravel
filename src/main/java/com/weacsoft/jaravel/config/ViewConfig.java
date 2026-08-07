@@ -3,18 +3,26 @@ package com.weacsoft.jaravel.config;
 import com.weacsoft.jaravel.vendor.cache.CacheManager;
 import com.weacsoft.jaravel.vendor.cache.CacheStore;
 import com.weacsoft.jaravel.vendor.core.view.View;
+import com.weacsoft.jaravel.vendor.jblade.BladeEngine;
+import com.weacsoft.jaravel.vendor.jblade.PrecompiledTemplateLoader;
 import com.weacsoft.jaravel.vendor.jblade.view.BladeView;
 import com.weacsoft.jaravel.vendor.jblade.view.RegisterView;
+import com.weacsoft.jaravel.vendor.utils.memory.MemoryClassLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 视图与静态资源配置（对齐 Laravel 的 Blade 模板引擎 + 静态资源）。
@@ -33,25 +41,26 @@ import java.io.File;
  *
  * <h3>BladeEngine 运行模式</h3>
  * <ul>
- *   <li><b>运行时编译模式</b>（默认）：从 classpath 读取模板源码，运行时编译（需要 JDK）。</li>
- *   <li><b>预编译模式</b>：从预编译的打包文件或 class 目录加载（仅需 JRE）。</li>
+ *   <li><b>预编译包模式</b>（默认，仅需 JRE）：从 classpath 资源加载预编译的 .jblade.zip，模板编译结果已打包进 JAR。</li>
+ *   <li><b>运行时编译模式</b>：从 classpath 读取模板源码，运行时编译（需要 JDK，仅开发环境）。</li>
  * </ul>
  *
- * <h3>静态资源</h3>
- * 支持在不重新打包 JAR 的情况下，通过在运行目录下放置 {@code public/} 文件夹
- * 来覆盖或新增前端资源。资源访问路径前缀为 {@code /static/**}。
+ * <h3>构建说明</h3>
+ * <p>
+ * Maven 构建时会自动预编译所有模板并打包为 templates.jblade.zip：
+ * <pre>
+ *   mvn package -P precompile-templates
+ * </pre>
+ * 该 profile 会执行 jblade 预编译器，生成预编译包并放入 classpath。
+ * </p>
  */
 @Configuration
 public class ViewConfig {
     private static final Logger log = LoggerFactory.getLogger(ViewConfig.class);
+    private static final String PRECOMPILED_ZIP = "templates.jblade.zip";
 
     /**
-     * 声明式注册 Blade 视图实现（对齐 {@code @RegisterGuardDriver} / {@code @RegisterCacheStore}）。
-     * <p>
-     * 三种写法示例（仅启用其一即可），其余以注释保留方便理解：
-     * </p>
-     *
-     * <h4>写法一：运行时编译模式（默认，需 JDK）</h4>
+     * 预编译包模式（默认，仅需 JRE）：从 classpath 加载预编译的 .jblade.zip
      */
     @RegisterView(name = "blade", defaultView = true)
     @Bean
@@ -68,41 +77,32 @@ public class ViewConfig {
                 log.warn("[view] 缓存模块未正确配置，编译缓存回退为内存");
             }
         }
-        log.info("[view] 注册 Blade 视图(运行时编译): templateDir={}, suffix={}", templateDir, suffix);
+
+        // 尝试从 classpath 加载预编译包（使用 ClassPathResource 确保 JAR 内资源正确读取）
+        try {
+            ClassPathResource cpr = new ClassPathResource(PRECOMPILED_ZIP);
+            if (cpr.exists()) {
+                log.info("[view] 使用预编译模板包: {}", PRECOMPILED_ZIP);
+                byte[] zipBytes = cpr.getInputStream().readAllBytes();
+                log.info("[view] 读取到 {} 字节预编译模板数据", zipBytes.length);
+                PrecompiledTemplateLoader.PrecompiledBundle bundle =
+                        PrecompiledTemplateLoader.loadBundleFromPackage(
+                                new ByteArrayInputStream(zipBytes));
+                MemoryClassLoader loader = new MemoryClassLoader(new ConcurrentHashMap<>(), BladeEngine.class.getClassLoader());
+                BladeEngine engine = new BladeEngine(templateDir, suffix, cacheStore, loader);
+                engine.populatePrecompiledBundle(bundle);
+                return BladeView.precompiledPackage("blade", templateDir, suffix, engine, assetUrlPrefix);
+            } else {
+                log.warn("[view] 预编译包不存在: {}", PRECOMPILED_ZIP);
+            }
+        } catch (Exception e) {
+            log.warn("[view] 预编译包加载失败，回退到运行时编译: {}", e.getMessage(), e);
+        }
+
+        // 运行时编译模式（需要 JDK）
+        log.info("[view] 使用运行时编译模式: templateDir={}, suffix={}（需要 JDK）", templateDir, suffix);
         return BladeView.runtime("blade", templateDir, suffix, cacheStore, assetUrlPrefix);
     }
-
-    // ========================================================================
-    // 备选写法（注释态，方便理解与使用）
-    // ========================================================================
-    //
-    // 写法二：预编译打包模式（仅需 JRE，模板已编译进 jar 包）
-    // @RegisterView(name = "blade-precompiled", defaultView = true)
-    // @Bean
-    // public View bladePrecompiledPackageView(
-    //         @Value("${jaravel.view.precompiled-package:com.weacsoft.jaravel.templates}") String pkg,
-    //         @Value("${jaravel.view.asset-url-prefix:/static}") String assetUrlPrefix) {
-    //     return BladeView.precompiledPackage("blade-precompiled", pkg, assetUrlPrefix);
-    // }
-    //
-    // 写法三：预编译 class 目录模式（仅需 JRE，从外部目录加载编译产物）
-    // @RegisterView(name = "blade-precompiled-dir", defaultView = true)
-    // @Bean
-    // public View bladePrecompiledDirView(
-    //         @Value("${jaravel.view.precompiled-classes-dir:}") String classesDir,
-    //         @Value("${jaravel.view.asset-url-prefix:/static}") String assetUrlPrefix) {
-    //     return BladeView.precompiledClasses("blade-precompiled-dir", classesDir, assetUrlPrefix);
-    // }
-    //
-    // 写法四：自定义 View 实现（完全替换模板引擎）
-    // @RegisterView(name = "myview", defaultView = true)
-    // @Bean
-    // public View myView() {
-    //     return new MyCustomView(); // 实现 com.weacsoft.jaravel.vendor.core.view.View
-    // }
-    //
-    // 写法五：完全不写任何声明 —— 由 jblade 的 ViewAutoConfiguration 兜底注册 Blade（运行时编译）。
-    //   此时 application.yml 中无需任何 jaravel.view.* 配置即可渲染模板。
 
     /**
      * 静态资源配置（对齐原 StaticResourceConfig）。

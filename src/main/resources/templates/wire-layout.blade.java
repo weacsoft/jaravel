@@ -39,6 +39,28 @@
         .badge-warning { background:#fff3e0; color:#f39c12; }
         .hint { font-size:13px; color:#757575; margin:8px 0; line-height:1.6; }
         .hint code { background:#f5f5f5; padding:1px 5px; border-radius:3px; font-size:12px; }
+        /* Toast 命名组件 — 固定定位，右下角弹出 */
+        .wc-toast {
+            position: fixed; right:24px; z-index:9999;
+            display:flex; align-items:center; gap:10px;
+            padding:14px 20px; border-radius:10px;
+            font-size:14px; font-weight:500; line-height:1.4;
+            box-shadow:0 4px 16px rgba(0,0,0,.15);
+            pointer-events:auto; cursor:default;
+            max-width:380px; min-width:240px;
+        }
+        .wc-toast--info    { background:#e8f4fd; color:#1976d2; border-left:4px solid #1976d2; }
+        .wc-toast--success { background:#e8f5e9; color:#2e7d32; border-left:4px solid #2e7d32; }
+        .wc-toast--warning { background:#fff8e1; color:#f57f17; border-left:4px solid #f57f17; }
+        .wc-toast--error   { background:#fce4ec; color:#c62828; border-left:4px solid #c62828; }
+        .wc-toast__icon { font-size:18px; flex-shrink:0; }
+        .wc-toast__msg { flex:1; }
+        .wc-toast__close {
+            flex-shrink:0; background:none; border:none;
+            font-size:18px; cursor:pointer; opacity:.5; padding:0 2px;
+            color:inherit; line-height:1;
+        }
+        .wc-toast__close:hover { opacity:1; }
         /* 导航卡片 */
         .nav-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-top:16px; }
         .nav-card { background:#fff; border:1px solid #e8ecf1; border-radius:12px; padding:20px; text-decoration:none; color:#333; display:block; transition:box-shadow .15s, transform .15s; }

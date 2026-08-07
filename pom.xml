@@ -185,6 +185,72 @@
                     <jvmArguments>--add-opens=java.base/java.lang=ALL-UNNAMED -Dserver.port=8080</jvmArguments>
                 </configuration>
             </plugin>
+
+            <!--
+                预编译 Blade 模板：在 generate-resources 阶段运行 jblade 预编译器，
+                将所有 .blade.java 模板编译为字节码并打包为 templates.jblade.zip，
+                放置到 target/classes 中，最终打入 JAR。
+                这样运行时只需 JRE，无需 JDK。
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>precompile-blade-templates</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.weacsoft.jaravel.vendor.jblade.BladePrecompilerMain</mainClass>
+                            <arguments>
+                                <argument>--template-dir=${project.basedir}/src/main/resources/templates</argument>
+                                <argument>--suffix=.blade.java</argument>
+                                <argument>--output-dir=${project.build.directory}/jblade-precompiled</argument>
+                                <argument>--mode=packaged</argument>
+                                <argument>--package-name=</argument>
+                                <argument>--file-suffix=.jblade.zip</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+                <!-- 依赖 jblade jar 来运行预编译器 -->
+                <dependencies>
+                    <dependency>
+                        <groupId>io.github.lijialong1313</groupId>
+                        <artifactId>jblade</artifactId>
+                        <version>${jaravel.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- 将预编译产物复制到 resources 目录，确保打入 JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-precompiled-templates</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/jblade-precompiled</directory>
+                                    <includes>
+                                        <include>templates.jblade.zip</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

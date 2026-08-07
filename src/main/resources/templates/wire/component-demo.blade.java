@@ -8,6 +8,10 @@
 <a href="/wire/components" wire-navigate class="@if($currentPage === 'components') active @endif">组件</a>
 @endsection
 
+@section('scripts')
+<script wire:config data-wire-update="/api/wire/components"></script>
+@endsection
+
 @section('content')
 <div class="card">
     <h3 style="margin-bottom:16px;font-size:16px;font-weight:700;">Wire 命名组件演示</h3>
