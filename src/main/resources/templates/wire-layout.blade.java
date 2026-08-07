@@ -77,6 +77,8 @@
 
     {{-- Wire 运行时 --}}
     <script src="@asset('js/wire-navigate.js')"></script>
+    <script src="@asset('js/wire-lib.js')"></script>
+    <script src="@asset('js/wire-component.js')"></script>
     @yield('scripts')
 </body>
 </html>
