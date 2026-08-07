@@ -8,7 +8,8 @@
  * - wire:model 双向绑定（防抖 150ms，wire:model.lazy 延迟到 blur）
  * - wire:loading 加载状态显示/隐藏
  * - wire:target 指定要更新的 section
- * - Wire.on/off 事件系统（beforeUpdate/afterUpdate），支持 mdui 等框架在 DOM 更新后刷新组件
+ * - Wire.on/off 事件系统（beforeRequest/afterRequest/beforeUpdate/afterUpdate），支持 mdui 等框架在 DOM 更新后刷新组件
+ * - 请求生命周期：beforeRequest → afterRequest → beforeUpdate → afterUpdate
  * - 零外部依赖，自包含
  */
 (function () {
@@ -24,9 +25,11 @@
     /**
      * 注册事件监听器。
      * <p>
-     * 支持的事件：
+     * 支持的完整事件生命周期：
      * <ul>
-     *   <li>{@code beforeUpdate} — 发送更新请求前触发，参数：{@code (component, action, params)}</li>
+     *   <li>{@code beforeRequest} — 发起 HTTP 请求前触发，参数：{@code (component, action, params)}</li>
+     *   <li>{@code afterRequest} — 收到 HTTP 响应后、数据处理前触发，参数：{@code (component, data)}</li>
+     *   <li>{@code beforeUpdate} — 数据处理前触发（兼容旧版，与 beforeRequest 同时触发）</li>
      *   <li>{@code afterUpdate} — DOM 更新完成后触发，参数：{@code (component, data, sections)}</li>
      * </ul>
      * <p>
@@ -516,7 +519,10 @@
         // 显示 loading
         showLoading(component, action);
 
-        // 触发 beforeUpdate 事件（发送请求前）
+        // 触发 beforeRequest 事件（发起 HTTP 请求前）
+        emit('beforeRequest', component, action, params);
+
+        // 触发 beforeUpdate 事件（数据处理前，保留兼容旧版）
         emit('beforeUpdate', component, action, params);
 
         // 构建请求体
@@ -574,6 +580,8 @@
             }
             return response.json();
         }).then(function (data) {
+            // 触发 afterRequest 事件（收到响应后，数据处理前）
+            emit('afterRequest', component, data);
             handleResponse(component, data);
             hideLoading(component, action);
 

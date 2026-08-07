@@ -1,5 +1,6 @@
 # 编译产物
 target/
+build/
 
 # IDE 配置
 .idea/

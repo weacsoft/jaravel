@@ -8,7 +8,7 @@
  *   - 多实例互相隔离（一个 stop 不影响另一个）
  *   - 自定义 wire_outlet() 位置
  *   - 例外路径 /blade-demo 不注入
- *   - PJAX 导航时组件随 payload.components 一起下发
+ *   - Wire 透明导航时组件随 payload.components 一起下发
  *
  * 运行：NODE_PATH=<node-workspace>/node_modules <node> e2e/wire-component.spec.js
  * 真实浏览器：优先 PW_EXECUTABLE → 360ChromeX → Chrome → Edge → 自带 chromium。
@@ -16,7 +16,7 @@
 const fs = require('fs');
 const { chromium } = require('playwright');
 
-const BASE = process.env.PJAX_BASE || 'http://localhost:8080';
+const BASE = process.env.JARAVEL_BASE || 'http://localhost:8080';
 
 function resolveExecutable() {
     if (process.env.PW_EXECUTABLE) return process.env.PW_EXECUTABLE;
@@ -153,22 +153,20 @@ async function runViewport(browser, vp) {
     check('未注入 outlet', await page.evaluate(() => document.querySelectorAll('[wire\\:outlet]').length) === 0);
     check('未加载 WireComponent 运行时', await page.evaluate(() => typeof window.WireComponent === 'undefined'));
 
-    // 8. PJAX 导航联动
-    console.log('\n=== 8. PJAX 局部导航时组件随 payload.components 一起下发 ===');
-    await page.goto(BASE + '/home', { waitUntil: 'networkidle' });
+    // 8. Wire 透明导航联动
+    console.log('\n=== 8. Wire 透明导航时组件随 payload.components 一起下发 ===');
+    await page.goto(BASE + '/wire-dashboard', { waitUntil: 'networkidle' });
     await sleep(500);
-    check('/home 已启用 PJAX', await page.evaluate(() => !!(window.Pjax && window.Pjax.__installed)));
-    const pjaxReqs = [];
-    page.on('request', r => { if (r.headers()['x-pjax']) pjaxReqs.push(r.url()); });
+    check('/wire-dashboard 首屏正常', await page.evaluate(() => !!window.__wireHashes));
+    // 点击导航链接（带 wire-navigate 属性），触发 Wire 局部切换
     const beforeUrl = page.url();
-    await page.evaluate(() => window.Pjax.visit('/wire-component-plain'));
-    await sleep(1500);
-    check('确实走了 PJAX 局部请求（非整页刷新）', pjaxReqs.some(u => u.includes('/wire-component-plain')), JSON.stringify(pjaxReqs));
-    check('URL 已切换到 /wire-component-plain', page.url().endsWith('/wire-component-plain'), page.url());
+    await page.click('a[href="/wire-records"]');
+    await sleep(1000);
+    check('URL 已切换到 /wire-records', page.url().endsWith('/wire-records'), page.url());
     check('前后 URL 不同（确认发生了导航）', beforeUrl !== page.url(), beforeUrl + ' -> ' + page.url());
-    check('PJAX 后 outlet 存在且唯一', await page.evaluate(() => document.querySelectorAll('[wire\\:outlet]').length) === 1);
-    const pjaxMounted = await page.evaluate(() => Array.from(document.querySelectorAll('[wire\\:outlet] > *')).map(e => e.className));
-    check('PJAX 后新页面的 toast 已无感挂载', pjaxMounted.length === 1 && pjaxMounted[0].includes('wc-toast--warning'), JSON.stringify(pjaxMounted));
+    check('Wire 导航后 outlet 存在且唯一', await page.evaluate(() => document.querySelectorAll('[wire\\:outlet]').length) === 1);
+    const wireMounted = await page.evaluate(() => Array.from(document.querySelectorAll('[wire\\:outlet] > *')).map(e => e.className));
+    check('Wire 导航后 toast 已无感挂载', wireMounted.length === 1 && wireMounted[0].includes('wc-toast--warning'), JSON.stringify(wireMounted));
 
     await page.close();
     return { name: vp.name, pass: pass.length, fail: fail.length, failItems: fail.slice() };

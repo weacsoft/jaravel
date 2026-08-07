@@ -103,23 +103,6 @@ jaravel:
         - /login
         - /blade-demo               # 示例：该页不需要命名组件，跳过 outlet 与运行时注入
         - /demo/storage/*           # 示例：前缀通配，下载/预览等非 HTML 响应一并排除
-  # ===== PJAX 无感页面切换 =====
-  # 零侵入：控制器与模板都不需要改动，只要在根路由挂上 PjaxMiddleware（见 RouteServiceProvider）。
-  #   - 首次直接访问某页面   -> 返回带区域锚点 + pjax.js 的完整 HTML（SEO / 首屏不受影响）
-  #   - 从已加载页面点链接过来 -> 只返回指纹发生变化的区域，未变化区域的 DOM 完全不动
-  #   - 布局不同 / 区域集合对不上 -> 自动回退整页跳转，保证渲染结果绝对正确
-  pjax:
-    enabled: true
-    auto-inject-js: true
-    js-path: /static/js/pjax.js
-    # 永不参与替换的区域名（这些区域始终保留页面上的原有 DOM）
-    excluded-regions: []
-    # 不纳入 PJAX 管辖的路径前缀（静态资源与接口）
-    excluded-prefixes:
-      - /api
-      - /static
-      - /assets
-      - /storage
   # ===== 认证（auth） =====
   # 本项目的 guards / providers 用【声明式】写在 AuthConfig.java 里（优先级最高）。
   # 这里只覆盖默认守卫名。

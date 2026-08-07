@@ -9,7 +9,7 @@ import com.weacsoft.jaravel.routes.Api;
 import com.weacsoft.jaravel.routes.Web;
 import com.weacsoft.jaravel.app.http.middleware.AppTrimStrings;
 import com.weacsoft.jaravel.app.http.middleware.AppConvertEmptyStringsToNull;
-import com.weacsoft.jaravel.vendor.wire.pjax.PjaxMiddleware;
+import com.weacsoft.jaravel.vendor.wire.navigation.WireMiddleware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -67,11 +67,11 @@ public class RouteServiceProvider extends ServiceProvider {
         RouteHelper.setRouter(baseRouter);
 
         // ===== 全局中间件（对齐 Laravel Kernel $middleware，所有路由继承） =====
-        // PjaxMiddleware：PJAX 无感切换的唯一接入点。
-        // 它只把请求上下文写入 ThreadLocal，由 ResponseBuilder.view 在渲染时自动分流，
-        // 因此所有既有控制器的 get/post 写法完全不需要改动；
-        // 非 GET、wire 请求、/api /static /assets 前缀等自动排除在管辖范围外。
-        baseRouter.middleware(new PjaxMiddleware())
+        // WireMiddleware：Wire 透明导航中间件，拦截 X-Wire-Navigate 请求，提取 section diff。
+        // 控制器照常使用 ResponseBuilder.view()，无需任何改动。
+        // 非 Wire 请求（无 X-Wire-Navigate: true 头）时直接透传整页响应。
+        // AppTrimStrings / AppConvertEmptyStringsToNull：标准表单数据清洗。
+        baseRouter.middleware(new WireMiddleware())
                   .middleware(AppTrimStrings.class)
                   .middleware(AppConvertEmptyStringsToNull.class);
 
