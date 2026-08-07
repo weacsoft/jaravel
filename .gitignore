@@ -23,3 +23,6 @@ logs/
 # 操作系统文件
 .DS_Store
 Thumbs.db
+
+# 本地测试（AI验证用，不提交）
+e2e/
