@@ -61,6 +61,27 @@
             color:inherit; line-height:1;
         }
         .wc-toast__close:hover { opacity:1; }
+        /* Confirm 确认框 — 遮罩层 + 居中弹窗 */
+        .wc-confirm-mask {
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background:rgba(0,0,0,.45); z-index:10000;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .wc-confirm {
+            background:#fff; border-radius:12px; padding:28px 24px 20px;
+            max-width:420px; width:90%;
+            box-shadow:0 8px 32px rgba(0,0,0,.2);
+            animation:wc-confirm-in .2s ease;
+        }
+        @keyframes wc-confirm-in {
+            from { opacity:0; transform:scale(.92) translateY(8px); }
+            to   { opacity:1; transform:scale(1) translateY(0); }
+        }
+        .wc-confirm__title { font-size:16px; font-weight:700; margin-bottom:10px; color:#333; }
+        .wc-confirm__body  { font-size:14px; color:#666; margin-bottom:22px; line-height:1.6; }
+        .wc-confirm__actions { display:flex; gap:8px; justify-content:flex-end; }
+        .wc-confirm__ok,
+        .wc-confirm__cancel { min-width:72px; }
         /* 导航卡片 */
         .nav-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-top:16px; }
         .nav-card { background:#fff; border:1px solid #e8ecf1; border-radius:12px; padding:20px; text-decoration:none; color:#333; display:block; transition:box-shadow .15s, transform .15s; }
@@ -96,6 +117,10 @@
     </div>
 
     <footer>jaravel v0.1.2 &mdash; Wire 透明导航演示</footer>
+
+    {{-- Wire 命名组件（toast/confirm）挂载容器 --}}
+    {{-- 注意：中间件 WireOutlet 未注册时不会自动注入，此处手动添加 --}}
+    <div id="wire-outlet" wire:outlet data-wire-outlet="wire-outlet"></div>
 
     {{-- Wire 运行时 --}}
     <script src="@asset('js/wire-navigate.js')"></script>
