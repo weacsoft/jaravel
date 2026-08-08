@@ -6,6 +6,7 @@
 <a href="/wire/spa"   wire-navigate class="@if($currentPage === 'spa') active @endif">SPA 导航</a>
 <a href="/wire/tasks" wire-navigate class="@if($currentPage === 'tasks') active @endif">CRUD 列表</a>
 <a href="/wire/components" wire-navigate class="@if($currentPage === 'components') active @endif">组件</a>
+<a href="/wire/anchors" wire-navigate class="@if($currentPage === 'anchors') active @endif">锚点改写</a>
 @endsection
 
 @section('scripts')

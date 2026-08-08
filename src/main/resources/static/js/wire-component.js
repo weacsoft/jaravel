@@ -7,11 +7,20 @@
  *  - 更新：Wire 响应 effects.components 由 wire.js 委派 mountAll，开发者无感。
  *  - 隔离：每个实例用 new Function 独立求值生命周期脚本，得到独立闭包（同名组件多开互不覆盖）。
  *  - 生命周期：onCreate(el, wire) → 插入 DOM → onStart(el, wire) → [wire.stop()] → onStop(el, wire) → 移除 DOM → onDestroy(el, wire)
- *  - wire.stop()：模板内主动调用表示"展示完成，移除我"。onStop 可返回 number(ms) 或 Promise 以延后移除（退出动画）。
+ *  - wire.stop()：模板内主动调用表示“展示完成，移除我”。onStop 可返回 number(ms) 或 Promise 以延后移除（退出动画）。
  *  - 零外部依赖，自包含。
  */
 (function () {
     'use strict';
+
+    // ===== 幂等守卫 =====
+    // 本脚本可能被加载多次：宿主模板手动 <script src="/js/wire-component.js">、
+    // WireOutlet 中间件自动注入 /static/wire-component.js、透明导航后 activateScripts
+    // 重新激活外链脚本。重复执行会让同一次 wire 响应挂载出两个 toast、绑定两份事件。
+    // 已加载过就原样返回，沿用先前实例的 instances 表。
+    if (window.WireComponent && window.WireComponent.__runtime === 'wire-component.js') {
+        return;
+    }
 
     /** id -> instance，用于按 id 停止 / 防重复挂载 */
     var instances = {};
@@ -170,6 +179,18 @@
         mountBootstrapTags();
     }
 
+    /**
+     * 重扫当前文档的引导数据并挂载。
+     * <p>
+     * 透明导航（wire-navigate）替换 DOM 后，新页面的
+     * {@code <script type="application/json" wire:components>} 是全新节点，
+     * 首屏那次 init() 无法感知，必须重扫一次，否则新页面的首屏组件不会出现。
+     * mountBootstrapTags 挂载后会移除标签，且 mount 按 id 去重，重复调用安全。
+     */
+    function scan() {
+        mountBootstrapTags();
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
@@ -178,10 +199,13 @@
 
     // ===== 公开 API =====
     window.WireComponent = {
+        /** 运行时指纹，供幂等守卫识别 */
+        __runtime: 'wire-component.js',
         mount: mount,
         mountAll: mountAll,
         stop: function (id) { stop(instances[id]); },
         init: init,
-        version: '1.0'
+        scan: scan,
+        version: '1.1'
     };
 })();

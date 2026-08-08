@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{-- 以下三处（title 文本、meta content 属性、body class 属性）都是 HTML 注释非法/失效的位置，
+         由 WireAnchorRewriter 在渲染出口改写为 wire:section-text / wire:section-attr 标记，
+         透明导航时由前端 applyAnchors 精确回填，验证 wire 锚点不再污染这些位置。 --}}
+    <meta name="description" content="@yield('metaDescription', 'jaravel Wire 演示')">
     <title>@yield('title', 'Wire Demo')</title>
     <link rel="stylesheet" href="@asset('css/mdui.min.css')">
     <style>
@@ -93,7 +97,7 @@
     </style>
     @yield('head')
 </head>
-<body>
+<body class="wire-page @yield('bodyClass', '')">
     {{-- 顶栏：展示当前页面归属（多 Controller 切换的视觉反馈） --}}
     <div class="topbar">
         jaravel Wire 演示
@@ -102,6 +106,7 @@
         <a href="/wire/spa"   wire-navigate class="@if(isset($currentPage) && $currentPage==='spa') active @endif">SPA 导航</a>
         <a href="/wire/tasks" wire-navigate class="@if(isset($currentPage) && $currentPage==='tasks') active @endif">CRUD 列表</a>
         <a href="/wire/components" wire-navigate class="@if(isset($currentPage) && $currentPage==='components') active @endif">组件</a>
+        <a href="/wire/anchors" wire-navigate class="@if(isset($currentPage) && $currentPage==='anchors') active @endif">锚点</a>
     </div>
 
     <div class="layout-body">

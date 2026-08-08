@@ -40,6 +40,10 @@ public class Web {
         Route.get("/wire/components",          "WireComponentController::page").name("wire.components");
         Route.post("/api/wire/components",     "WireComponentController::update");
 
+        // 锚点改写演示（title / class / meta 等 HTML 注释非法位置的 section 替换）
+        Route.get("/wire/anchors",          "WireAnchorController::page").name("wire.anchors");
+        Route.post("/api/wire/anchors",     "WireAnchorController::update");
+
         // 数据库文件存储演示
         Route.get("/demo/storage", "StorageDemoController::index").name("storage.demo");
         Route.post("/demo/storage/upload", "StorageDemoController::upload");

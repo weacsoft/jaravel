@@ -1,6 +1,8 @@
 @extends('wire-layout')
 
 @section('title', 'Wire 演示 — 仪表盘')
+@section('bodyClass', 'page-dashboard')
+@section('metaDescription', 'jaravel Wire 仪表盘：透明导航与局部刷新总览')
 
 @section('sidebar')
     <a href="/wire" wire-navigate class="active">📊 仪表盘</a>
@@ -8,6 +10,7 @@
     <a href="/wire/spa" wire-navigate>🧭 SPA 导航</a>
     <a href="/wire/tasks" wire-navigate>📝 CRUD 列表</a>
     <a href="/wire/components" wire-navigate>🧩 命名组件</a>
+    <a href="/wire/anchors" wire-navigate>⚓ 锚点改写</a>
 @endsection
 
 @section('content')

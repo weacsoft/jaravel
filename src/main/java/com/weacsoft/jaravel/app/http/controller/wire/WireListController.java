@@ -5,7 +5,8 @@ import com.weacsoft.jaravel.vendor.http.controller.Controllers;
 import com.weacsoft.jaravel.vendor.http.controller.request.Request;
 import com.weacsoft.jaravel.vendor.http.controller.response.Response;
 import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
-import com.weacsoft.jaravel.vendor.wire.WireManager;
+import com.weacsoft.jaravel.vendor.wire.WireRequest;
+import com.weacsoft.jaravel.vendor.wire.WireResponse;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -13,69 +14,70 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Wire CRUD 演示 — 基于 SQLite 真实数据库的任务列表
+ * Wire CRUD 演示 — 基于 SQLite 真实数据库的任务列表。
  * <p>
- * 演示：增删改操作后精准刷新列表（只更新 list section），
- * 输入框状态在刷新后保留（通过 data-wire-key 实现最小化 diff）。
+ * 演示要点：增删改由 {@code wire:click} / {@code wire:submit} 触发，
+ * 服务端只回传 {@code summary} 与 {@code list} 两个 section，页面其余部分（含新增输入框）保持原状。
+ * <p>
+ * 前后端契约：请求体为 {@code wire_body=<json>}（snapshot/action/params/sections），
+ * 响应必须是 {@code {sections:{...}, snapshot, effects}} —— 由 {@link WireResponse#update} 统一构造。
  */
 public class WireListController implements Controllers {
 
+    /** 本页参与局部刷新的 section。 */
+    private static final List<String> SECTIONS = List.of("summary", "list");
+
+    private static final String TEMPLATE = "wire/task-list";
+
     public Response page(Request request) {
-        List<Task> tasks = Task.self().findAll().toObjectList();
-        List<Map<String, Object>> taskList = new ArrayList<>();
-        for (Task t : tasks) {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("id", t.getId());
-            m.put("name", t.getName());
-            m.put("done", t.getDone());
-            taskList.add(m);
-        }
-        long doneCount = taskList.stream().filter(t -> Boolean.TRUE.equals(t.get("done"))).count();
-        return ResponseBuilder.view("wire/task-list", Map.of(
-                "tasks", taskList,
-                "total", taskList.size(),
-                "doneCount", doneCount
-        ));
+        return ResponseBuilder.view(TEMPLATE, listData());
     }
 
     public Response update(Request request) {
-        String action = request.get("action");
+        WireRequest wr = WireRequest.from(request);
+        String action = wr.getAction();
+        Map<String, Object> params = wr.getParams();
 
         if ("add".equals(action)) {
-            String name = request.get("name");
-            if (name != null && !name.isBlank()) {
+            String name = text(params.get("name"));
+            if (!name.isBlank()) {
                 Task t = new Task();
-                t.setName(name.trim());
+                t.setName(name);
                 t.setDone(false);
                 t.save();
             }
         } else if ("update".equals(action)) {
-            Integer id = request.get("id", Integer.class);
-            String newName = request.get("name");
-            if (id != null && newName != null && !newName.isBlank()) {
+            Integer id = intOf(params.get("id"));
+            String newName = text(params.get("name"));
+            if (id != null && !newName.isBlank()) {
                 Task t = Task.findById(id);
                 if (t != null) {
-                    t.setName(newName.trim());
+                    t.setName(newName);
                     t.save();
                 }
             }
         } else if ("toggle".equals(action)) {
-            Integer id = request.get("id", Integer.class);
+            Integer id = intOf(params.get("id"));
             if (id != null) {
                 Task t = Task.findById(id);
                 if (t != null) {
-                    t.setDone(!t.getDone());
+                    t.setDone(!Boolean.TRUE.equals(t.getDone()));
                     t.save();
                 }
             }
         } else if ("delete".equals(action)) {
-            Integer id = request.get("id", Integer.class);
+            Integer id = intOf(params.get("id"));
             if (id != null) {
                 Task.self().newQuery().where("id", id).delete();
             }
         }
 
-        // 重新加载列表数据
+        // 只回传变化的 section，前端 wire.js 定位 [wire:section] 后替换其内容
+        return WireResponse.update(TEMPLATE, listData(), SECTIONS);
+    }
+
+    /** 从数据库读取全量任务并整理成模板数据。 */
+    private Map<String, Object> listData() {
         List<Task> tasks = Task.self().findAll().toObjectList();
         List<Map<String, Object>> taskList = new ArrayList<>();
         for (Task t : tasks) {
@@ -85,14 +87,32 @@ public class WireListController implements Controllers {
             m.put("done", t.getDone());
             taskList.add(m);
         }
-
-        // 只返回 list section 的 diff
         long doneCount = taskList.stream().filter(x -> Boolean.TRUE.equals(x.get("done"))).count();
-        String html = WireManager.renderSection("wire/task-list", "list", Map.of(
-                "tasks", taskList,
-                "total", taskList.size(),
-                "doneCount", doneCount
-        ));
-        return ResponseBuilder.json(Map.of("list", html));
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("tasks", taskList);
+        data.put("total", taskList.size());
+        data.put("doneCount", doneCount);
+        return data;
+    }
+
+    /** wire params 的值可能是字符串或数字，统一转成 trim 后的文本。 */
+    private static String text(Object value) {
+        return value == null ? "" : String.valueOf(value).trim();
+    }
+
+    /** wire:param-id 传来的通常是字符串，宽松解析为整数；非法值返回 null 而不是抛异常。 */
+    private static Integer intOf(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return Integer.valueOf(String.valueOf(value).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
