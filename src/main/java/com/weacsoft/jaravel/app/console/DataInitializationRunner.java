@@ -21,9 +21,11 @@ import org.springframework.stereotype.Component;
  * </ul>
  * <p>
  * 这样新用户启动应用后无需手动执行 {@code --artisan db:seed}。
+ * <p>
+ * 使用 {@link Order#Integer#MAX_VALUE} 确保在所有迁移完成后执行。
  */
 @Component
-@Order(100)
+@Order(Integer.MAX_VALUE)
 public class DataInitializationRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializationRunner.class);
@@ -47,7 +49,13 @@ public class DataInitializationRunner implements ApplicationRunner {
                 log.info("[init] admin 表已有记录，跳过种子数据初始化");
             }
         } catch (Exception e) {
-            log.error("[init] 种子数据自动初始化失败: {}", e.getMessage(), e);
+            // 表不存在时说明迁移未完成，等待迁移完成后重试
+            if (e.getMessage() != null && e.getMessage().contains("no such table")) {
+                log.warn("[init] 数据库表尚未创建（迁移未完成），跳过种子数据初始化。"
+                        + "请确保应用启动时迁移已执行，或手动运行 --artisan migrate");
+            } else {
+                log.error("[init] 种子数据自动初始化失败: {}", e.getMessage(), e);
+            }
         }
     }
 }

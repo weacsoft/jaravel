@@ -77,11 +77,15 @@ jaravel/
 │           └── RouteServiceProvider.java   # 路由加载
 ├── src/main/resources/
 │   ├── application.yml
-│   └── static/                              # 前端页面
-│       ├── index.html                       # 平台首页
-│       ├── admin.html                       # 管理员后台
-│       ├── user.html                        # 用户插件执行
-│       └── css/style.css                    # 共享样式
+│   └── static/                              # 前端资源（CSS/JS/字体等）
+│       ├── css/style.css                    # 共享样式
+│       └── js/                              # JavaScript 库（CodeMirror/MDUI 等）
+│   └── templates/                           # Blade 模板（.blade.java）
+│       ├── index.blade.java                 # 平台首页
+│       ├── admin.blade.java                 # 管理员后台
+│       ├── user.blade.java                  # 用户入口
+│       ├── wire/                            # Wire 演示模板
+│       └── ...
 ├── plugins-java/                            # Java 文件插件目录
 └── pom.xml
 ```
@@ -114,7 +118,7 @@ mvn spring-boot:run
 ### 3. 初始化种子数据
 
 ```bash
-java -jar target/jaravel-0.1.0.jar --artisan db:seed
+java -jar target/jaravel-0.1.2.jar --artisan db:seed
 ```
 
 种子数据包括：
@@ -129,8 +133,8 @@ java -jar target/jaravel-0.1.0.jar --artisan db:seed
 | 页面 | URL | 说明 |
 |------|-----|------|
 | 平台首页 | http://localhost:8080/ | 平台介绍 + 插件系统总览 |
-| 管理员后台 | http://localhost:8080/admin.html | 管理员登录 + RBAC + 插件管理 |
-| 用户入口 | http://localhost:8080/user.html | 用户登录 + Java/Jar 插件执行 |
+| 管理员后台 | http://localhost:8080/admin | 管理员登录 + RBAC + 插件管理 |
+| 用户入口 | http://localhost:8080/user | 用户登录 + Java/Jar 插件执行 |
 
 ### 5. API 验证
 

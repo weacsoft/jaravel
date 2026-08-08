@@ -1,28 +1,43 @@
-# 编译产物
-target/
 build/
-
-# IDE 配置
+target/
 .idea/
+.gradle/
 *.iml
-*.ipr
-*.iws
-
-# 数据库文件
-*.sqlite
-*.sqlite3
-*.db
-
-# 日志
-*.log
-logs/
-
-# 环境配置（含敏感信息）
-.env
-
-# 操作系统文件
 .DS_Store
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.bak
+*.tmp
+*.swp
+*.swo
+*~
 Thumbs.db
-
-# 本地测试（AI验证用，不提交）
-e2e/
+*.pyc
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+venv/
+.venv/
+env/
+.env
+.env.local
+.env.*.local
+logs/
+dist/
+out/
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.orig
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.cached-classes/
+.cached-tests/
