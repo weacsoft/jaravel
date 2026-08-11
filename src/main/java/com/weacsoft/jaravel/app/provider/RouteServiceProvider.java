@@ -87,10 +87,8 @@ public class RouteServiceProvider extends ServiceProvider {
         // 挂上 VerifyCsrfToken 中间件：POST/PUT/PATCH/DELETE 等请求需校验 CSRF token，
         // GET/HEAD/OPTIONS 及 VerifyCsrfToken 排除路由（如 api/、logout 等）自动放行。
         // token 由 VerifyCsrfToken 写入 HttpSession(csrf_token)，与模板 csrf_field() 共用同源值。
-        // WireOutlet 中间件挂在 Web 组末尾：自动为每个 Web 页面补齐命名组件的加载位置（outlet 容器）
-        // 与首屏 bootstrap，并注入前端运行时；支持 jaravel.wire.outlet.except 排除路径。
         Route.group(Map.of(
-                Route.Group.MIDDLEWARE, new String[]{"VerifyCsrfToken", "WireOutlet"}
+                Route.Group.MIDDLEWARE, new String[]{"VerifyCsrfToken"}
         ), Web::register);
 
         // 清理 ThreadLocal 上下文（防止线程池复用时泄漏）
