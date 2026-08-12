@@ -137,7 +137,15 @@
         return parts.join('');
     }
 
-    /** 替换 section 起止注释之间的 DOM */
+    /**
+     * 替换 section 起止注释之间的 DOM，返回本次【新插入】的 <script> 节点列表。
+     * <p>
+     * 返回新插入的脚本而非扫描整个父容器，是为了避免把父容器内【原本就存在】的脚本
+     * （如主布局 main.jblade 中定义 change_style/check_time 的脚本）也一并重跑：
+     * 那会导致 change_style 事件监听器重复绑定（点击夜间切换按钮时 N 个监听器连环
+     * toggle，看起来「点了没反应」）、check_time 在每次导航后重复执行把夜间模式再
+     * toggle 回去（导航后夜间模式神秘消失）。
+     */
     function replaceSectionContent(section, newHtml) {
         // 移除旧 DOM
         var node = section.startNode.nextSibling;
@@ -150,26 +158,36 @@
         // 插入新 DOM
         var temp = document.createElement('div');
         temp.innerHTML = newHtml;
+
+        // 先收集新插入的 script（必须在搬空 temp 之前，之后 querySelectorAll 会拿到空集）
+        var inserted = [];
+        var scripts = temp.querySelectorAll ? temp.querySelectorAll('script') : [];
+        for (var i = 0; i < scripts.length; i++) {
+            inserted.push(scripts[i]);
+        }
+
         var frag = document.createDocumentFragment();
         while (temp.firstChild) {
             frag.appendChild(temp.firstChild);
         }
         section.endNode.parentNode.insertBefore(frag, section.endNode);
+        return inserted;
     }
 
     /**
-     * 让 section 中新插入的 <script> 生效。
+     * 让【本次新插入】的 <script> 生效。
      * <p>
      * innerHTML 插入的 <script> 按 HTML 规范不会执行，导致新页面的初始化脚本失效。
-     * 这里克隆为新的 script 节点重新插入以触发执行。
+     * 这里把新插入的脚本克隆为新的 script 节点重新插入以触发执行。
      * 纯标记节点（wire:config / wire:components 等无可执行内容的配置载体）跳过，
      * 它们只需要留在 DOM 中被运行时读取属性。
      */
-    function activateScripts(root) {
-        if (!root) return;
-        var scripts = root.querySelectorAll ? root.querySelectorAll('script') : [];
-        for (var i = 0; i < scripts.length; i++) {
-            var old = scripts[i];
+    function activateScripts(scriptNodes) {
+        if (!scriptNodes) return;
+        for (var i = 0; i < scriptNodes.length; i++) {
+            var old = scriptNodes[i];
+            // 若脚本已被其它逻辑移除（如被 replaceChild 链处理过）则跳过
+            if (!old.parentNode) continue;
             var type = (old.getAttribute('type') || '').toLowerCase();
             var isDataOnly = old.hasAttribute('wire:config') || old.hasAttribute('wire:snapshot')
                 || old.hasAttribute('wire:components') || type === 'application/json';
@@ -212,7 +230,22 @@
                     if (colon <= 0) return;
                     var attrName = token.slice(0, colon);
                     var target = document.querySelector('[wire\\:section-attr~="' + token + '"]');
-                    if (target) target.setAttribute(attrName, value);
+                    if (!target) return;
+                    if (attrName === 'class') {
+                        // class 合并，而不是整体覆盖：服务端下发的 class 只代表「模板声明的静态部分」，
+                        // 客户端运行时可能在此基础上追加了状态 class（如 mdui-loaded、mdui-theme-layout-dark
+                        // 夜间模式、mdui-drawer-body-left 等）。若直接 setAttribute 整体覆盖，
+                        // 一次 wire 导航就会把夜间模式等客户端状态抹掉。
+                        // 策略：以服务端值为基础，保留客户端独有的 class。
+                        var serverClasses = String(value).split(/\s+/).filter(Boolean);
+                        var currentClasses = (target.className || '').split(/\s+/).filter(Boolean);
+                        var kept = currentClasses.filter(function (c) {
+                            return serverClasses.indexOf(c) < 0;
+                        });
+                        target.className = serverClasses.concat(kept).join(' ');
+                    } else {
+                        target.setAttribute(attrName, value);
+                    }
                 }
             } catch (e) {
                 console.error('[wire-navigate] 锚点应用失败: ' + key, e);
@@ -281,8 +314,8 @@
         walkSections(function (name, section) {
             var newHtml = sections[name];
             if (newHtml !== undefined) {
-                replaceSectionContent(section, newHtml);
-                replaced.push(section);
+                var insertedScripts = replaceSectionContent(section, newHtml);
+                replaced.push(insertedScripts);
                 changedCount++;
             }
             // 更新 hash
@@ -291,9 +324,11 @@
             }
         });
 
-        // 让新插入的脚本生效（innerHTML 插入的 <script> 默认不执行）
+        // 只让【本次新插入】的脚本生效（innerHTML 插入的 <script> 默认不执行）。
+        // 不能扫整个 body：那会把布局里原有的脚本（change_style/check_time 定义等）
+        // 重跑一遍，导致事件监听重复绑定、check_time 重复 toggle 夜间模式。
         for (var r = 0; r < replaced.length; r++) {
-            activateScripts(replaced[r].endNode.parentNode);
+            activateScripts(replaced[r]);
         }
 
         // 更新「注释非法位置」的锚点（<title> 文本、class 等属性）
