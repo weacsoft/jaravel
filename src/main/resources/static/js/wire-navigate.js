@@ -312,7 +312,11 @@
         // 更新 URL
         var finalUrl = payload.url || url;
         if (finalUrl && finalUrl !== currentUrl) {
-            history.pushState({ wireUrl: finalUrl }, '', finalUrl);
+            // 用 wireNavigate 标记本条目,popstate 只处理带标记的条目,
+            // 避免与 wire.js 的 pushUrl(如点击「修改」后的深链 pushState)互相干扰:
+            // wire.js 的 pushState + mdui 对话框的 #hash 变更会触发 popstate,
+            // 若此处一律 visit 会把列表页误换成整页表单(见「点击修改整页跳转」bug 根因)。
+            history.pushState({ wireNavigate: true, wireUrl: finalUrl }, '', finalUrl);
             currentUrl = finalUrl;
         }
 
@@ -371,10 +375,20 @@
     });
 
     // ===== 浏览器后退/前进 =====
+    // 仅忽略 wire.js pushUrl 深链条目(state.wireUrl 存在但无 wireNavigate 标记):
+    // 这类条目是 wire.js 在「点击修改」等场景用 history.pushState 生成的深链,其 DOM 本就正确,
+    // 若也 visit 会把列表页误导航成整页表单(mdui 对话框 #hash 变更触发的 popstate 即此场景)。
+    // wire-navigate 自己的条目(state.wireNavigate)用局部 diff 恢复;
+    // 普通 GET 页面条目(state 为 null)用整页加载恢复(避免 diff + pushState 产生重复历史条目,导致前进失灵)。
     window.addEventListener('popstate', function (e) {
+        if (e.state && e.state.wireUrl && !e.state.wireNavigate) return;
         var url = (e.state && e.state.wireUrl) || location.href;
         if (url !== currentUrl) {
-            visit(url);
+            if (e.state && e.state.wireNavigate) {
+                visit(url);
+            } else {
+                hardNavigate(url);
+            }
         }
     });
 
