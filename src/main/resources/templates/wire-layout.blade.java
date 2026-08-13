@@ -127,10 +127,8 @@
     {{-- 注意：中间件 WireOutlet 未注册时不会自动注入，此处手动添加 --}}
     <div id="wire-outlet" wire:outlet data-wire-outlet="wire-outlet"></div>
 
-    {{-- Wire 运行时 --}}
-    <script src="@asset('js/wire-navigate.js')"></script>
-    <script src="@asset('js/wire-lib.js')"></script>
-    <script src="@asset('js/wire-component.js')"></script>
+    {{-- Wire 运行时：单一文件，已合并 核心部分更新 + 命名组件 + 透明导航 全部能力 --}}
+    <script src="@asset('wire.js')"></script>
     @yield('scripts')
 </body>
 </html>

@@ -88,21 +88,14 @@ jaravel:
   # Wire 部分更新模块（Laravel Livewire 风格）
   wire:
     auto-inject-js: true
-    js-path: /static/js/wire-lib.js?v=2
+    # 单一运行时 wire.js（核心部分更新 + 命名组件 + 透明导航，已全部内联，零外部依赖）。
+    # 与模板 manual 引入的 /wire.js 保持一致，避免重复加载或指向已删除的拆分文件。
+    # 业务工程可用 `artisan vendor:publish --tag=wire` 把这份副本发布到 src/main/resources/static/wire.js。
+    js-path: /wire.js
     # 命名组件注册（名称 -> 模板）。也可在启动期用 WireComponents.register(name, template) 注册。
     components:
       toast: components.toast
       confirm: components.confirm
-    # 命名组件加载位置（Outlet）配置
-    outlet:
-      enabled: true
-      position: body-end            # body-end（默认，插到 </body> 前）| body-start（插到 <body> 后）
-      auto-inject-js: true          # 是否自动注入 wire-component.js
-      js-path: /static/wire-component.js
-      except:                       # 不注入加载位置的路径，支持精确 /login 与前缀通配 /admin/*
-        - /login
-        - /blade-demo               # 示例：该页不需要命名组件，跳过 outlet 与运行时注入
-        - /demo/storage/*           # 示例：前缀通配，下载/预览等非 HTML 响应一并排除
   # ===== 认证（auth） =====
   # 本项目的 guards / providers 用【声明式】写在 AuthConfig.java 里（优先级最高）。
   # 这里只覆盖默认守卫名。

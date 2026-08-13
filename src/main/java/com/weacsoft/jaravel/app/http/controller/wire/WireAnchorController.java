@@ -1,13 +1,8 @@
 package com.weacsoft.jaravel.app.http.controller.wire;
 
-import com.weacsoft.jaravel.vendor.http.controller.Controllers;
-import com.weacsoft.jaravel.vendor.http.controller.request.Request;
-import com.weacsoft.jaravel.vendor.http.controller.response.Response;
-import com.weacsoft.jaravel.vendor.http.controller.response.ResponseBuilder;
-import com.weacsoft.jaravel.vendor.wire.WireRequest;
-import com.weacsoft.jaravel.vendor.wire.WireResponse;
+import com.weacsoft.jaravel.vendor.wire.WireController;
+import com.weacsoft.jaravel.vendor.wire.WireView;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -27,26 +22,21 @@ import java.util.Map;
  * 本页把 title / body class / meta description 三处都交给 section 驱动，
  * 用于人工与自动化回归验证。
  */
-public class WireAnchorController implements Controllers {
+public class WireAnchorController extends WireController {
 
-    public Response page(Request request) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("currentPage", "anchors");
-        data.put("theme", "light");
-        data.put("hitCount", 0);
-        return ResponseBuilder.view("wire/anchor-demo", data);
+    @Override
+    protected WireView render() {
+        return wireView("wire/anchor-demo");
     }
 
-    public Response update(Request request) {
-        WireRequest wr = WireRequest.from(request);
-        String action = wr.getAction();
-        WireResponse resp = WireResponse.of();
+    @Override
+    protected String getUpdateRouteName() { return "wire.anchors"; }
 
-        if ("ping".equals(action)) {
-            resp.withComponent("toast", Map.of(
-                    "type", "success",
-                    "message", "锚点页 wire 请求正常，section 标记未污染页面"));
-        }
-        return resp.build();
+    /** ping 按钮 action：仅测试 wire 请求是否正常 */
+    public void ping() {
+        wire().component("toast", Map.of(
+                "type", "success",
+                "message", "锚点页 wire 请求正常，section 标记未污染页面"
+        ));
     }
 }

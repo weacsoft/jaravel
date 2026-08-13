@@ -16,7 +16,7 @@
 @section('content')
 <div class="card">
     <h3 style="margin-bottom:16px;font-size:16px;font-weight:700;">Wire 命名组件演示</h3>
-    <p class="hint">点击按钮，控制器在 JSON 响应中下发组件，前端 wire-component.js 自动无感挂载。</p>
+    <p class="hint">点击按钮，控制器通过 {@code wire().component("name", params)} 下发命名组件，前端 wire.js 自动无感挂载。</p>
 </div>
 
 <div class="card">
@@ -47,15 +47,15 @@
         </tr>
         <tr>
             <td>2</td>
-            <td>控制器调用 <code>WireResponse.of().withComponent("toast", ...).build()</code>，将组件序列化为 JSON 下发</td>
+            <td>控制器通过 <code>wire().component("toast", ...)</code> 在 action 中下发组件，框架自动随响应组装</td>
         </tr>
         <tr>
             <td>3</td>
-            <td>前端 wire-lib.js 收到 JSON 后，读取 <code>effects.components</code>，调用 <code>WireComponent.mountAll()</code> 挂载</td>
+            <td>前端 wire.js（单一运行时）收到 JSON 后，读取 <code>effects.components</code>，调用 <code>WireComponent.mountAll()</code> 挂载</td>
         </tr>
         <tr>
             <td>4</td>
-            <td>wire-component.js 解析组件 HTML + 生命周期脚本，插入 <code>[wire:outlet]</code> 容器，执行 onCreate → onStart</td>
+            <td>wire.js 收到响应后，读取 <code>effects.components</code>，调用 <code>WireComponent.mountAll()</code> 挂载</td>
         </tr>
     </table>
 </div>
