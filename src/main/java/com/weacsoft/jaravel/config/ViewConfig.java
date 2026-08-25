@@ -6,7 +6,7 @@ import com.weacsoft.jaravel.vendor.core.view.View;
 import com.weacsoft.jaravel.vendor.jblade.BladeEngine;
 import com.weacsoft.jaravel.vendor.jblade.PrecompiledTemplateLoader;
 import com.weacsoft.jaravel.vendor.jblade.view.BladeView;
-import com.weacsoft.jaravel.vendor.jblade.view.RegisterView;
+import com.weacsoft.jaravel.vendor.springboot.jblade.RegisterView;
 import com.weacsoft.jaravel.vendor.utils.memory.MemoryClassLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -20,7 +20,7 @@ import java.util.List;
  * <p>
  * 覆盖用户诉求的「数据库存文件」与「和 HTTP Request/Response 整合」：
  * <ul>
- *   <li><b>上传（Request 整合）</b>：{@link Storage#putFile(String, String, MultipartFile)} 直接从上传文件写入。</li>
+ *   <li><b>上传（Request 整合）</b>：从 {@link MultipartFile} 取值后经 {@code Storage.put(disk, path, byte[])} 写入。</li>
  *   <li><b>下载 / 预览（Response 整合）</b>：{@link Storage#download(String, String)} /
  *       {@link Storage#response(String, String)} 直接返回可作为控制器返回值的 {@code Response}。</li>
  *   <li><b>分片 / base64</b>：由 {@code application.yml} 中 db 磁盘的 binary / chunk-size 决定（见存储配置）。</li>
@@ -44,7 +44,7 @@ public class StorageDemoController implements Controllers {
                 .append("a{color:#2563eb}form{margin-bottom:1.5rem;padding:1rem;border:1px solid #eee}</style></head><body>");
         html.append("<h1>数据库文件存储演示（disk: db）</h1>");
 
-        String uploaded = request.input("uploaded");
+        String uploaded = request.get("uploaded");
         if (uploaded != null && !uploaded.isEmpty()) {
             html.append("<p style=\"color:green\">已上传：").append(escape(uploaded)).append("</p>");
         }
@@ -84,6 +84,9 @@ public class StorageDemoController implements Controllers {
 
     /**
      * 接收上传并写入数据库磁盘（Request 整合）。
+     * <p>
+     * 新版 vendor（P1 存储纯化）存储门面改为字节/流 API：
+     * {@code Storage.put(disk, path, byte[])}（旧 {@code putFile(disk, dir, MultipartFile)} 已移除）。
      */
     public Response upload(Request request) {
         MultipartFile file = request.file("file");
@@ -92,7 +95,12 @@ public class StorageDemoController implements Controllers {
         }
         String dir = request.input("dir", "uploads");
         try {
-            String path = Storage.putFile(DB_DISK, dir, file);
+            String name = file.getOriginalFilename();
+            if (name == null || name.isEmpty()) {
+                name = "upload-" + System.currentTimeMillis();
+            }
+            String path = dir.startsWith("/") ? dir + name : dir + "/" + name;
+            Storage.disk(DB_DISK).put(path, file.getBytes());
             return ResponseBuilder.redirect("/demo/storage?uploaded=" + URLEncoder.encode(path, StandardCharsets.UTF_8));
         } catch (IOException e) {
             return ResponseBuilder.error(500, "写入失败：" + e.getMessage());
@@ -103,21 +111,21 @@ public class StorageDemoController implements Controllers {
      * 以附件形式下载（Response 整合）。
      */
     public Response download(Request request) {
-        return Storage.download(DB_DISK, request.input("path"));
+        return Storage.download(DB_DISK, request.get("path"));
     }
 
     /**
      * 以内联形式预览（Response 整合，按 MIME 直接显示图片/PDF 等）。
      */
     public Response view(Request request) {
-        return Storage.response(DB_DISK, request.input("path"));
+        return Storage.response(DB_DISK, request.get("path"));
     }
 
     /**
      * 删除文件。
      */
     public Response delete(Request request) {
-        String path = request.input("path");
+        String path = request.get("path");
         if (path != null && !path.isEmpty()) {
             Storage.delete(DB_DISK, path);
         }
